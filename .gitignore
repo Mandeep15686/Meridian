@@ -1,0 +1,169 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+ENV/
+env/
+.env.local
+.env.*.local
+env.bak/
+venv.bak/
+
+# ── Secrets and credentials ───────────────────────────────────────────────────
+# NEVER commit these
+.env
+.env.dev
+.env.prod
+.env.staging
+*.pem
+*.key
+*.p12
+credentials.json
+service-account-key.json
+gcloud-credentials.json
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+*.cover
+*.py,cover
+
+# ── Type checking ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+docs/_build/
+site/
+
+# ── Distribution ──────────────────────────────────────────────────────────────
+*.tar.gz
+*.whl
+
+# ── Database / migration ──────────────────────────────────────────────────────
+*.sqlite
+*.db
+checkpoints.db          # LangGraph SQLite checkpointer (dev only)
+
+# ── ML / AI artefacts ────────────────────────────────────────────────────────
+# Model weights (large files — store in GCS or HF Hub instead)
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+models/
+model_cache/
+.cache/huggingface/
+huggingface/
+
+# MLflow artefacts (use remote tracking server in production)
+mlruns/
+mlartifacts/
+
+# ── Storage / uploads ─────────────────────────────────────────────────────────
+# Local storage (development only — never commit user-uploaded files)
+/tmp/meridian/
+uploads/
+reports/
+/data/uploads/
+/data/reports/
+
+# ── Corpus source files ───────────────────────────────────────────────────────
+# Downloaded corpus files (large, regeneratable from ingestion script)
+data/corpus_sources/*.pdf
+data/corpus_sources/*.txt
+data/corpus_sources/*.html
+# Keep the directory and .gitkeep
+!data/corpus_sources/.gitkeep
+
+# ── Sample docs ───────────────────────────────────────────────────────────────
+# Keep sample docs but exclude large test files
+data/sample_docs/*.mp3
+data/sample_docs/*.wav
+data/sample_docs/*.m4a
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.log.*
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ── Alembic ──────────────────────────────────────────────────────────────────
+# Keep all migration files — they are part of the codebase
+
+# ── Profiling ────────────────────────────────────────────────────────────────
+*.prof
+profile.out
+*.lprof
+*.cprof
+
+# ── Coverage ──────────────────────────────────────────────────────────────────
+.coverage.*
+!.coveragerc
+
+# ── Pre-commit ────────────────────────────────────────────────────────────────
+# Keep pre-commit config; ignore its cache
+.pre-commit-cache/
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+.ruff_cache/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

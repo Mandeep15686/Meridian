@@ -1,0 +1,219 @@
+version: "3.9"
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  meridian_net:
+    driver: bridge
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  mlflow_data:
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL 15 + pgvector ────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: meridian_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: meridian
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: meridian
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - meridian_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meridian -d meridian"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Redis 7 ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: meridian_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - meridian_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI application ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: meridian_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://meridian:password@postgres:5432/meridian
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /tmp/meridian
+      WORKERS: 1
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src:ro       # hot-reload source (dev only)
+      - ../data:/app/data:ro
+      - /tmp/meridian:/tmp/meridian
+    networks:
+      - meridian_net
+    command: >
+      uvicorn src.api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level debug
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Celery worker ────────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: meridian_worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://meridian:password@postgres:5432/meridian
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /tmp/meridian
+    volumes:
+      - ../src:/app/src:ro
+      - /tmp/meridian:/tmp/meridian
+    networks:
+      - meridian_net
+    command: >
+      celery -A src.api.worker
+      worker
+      --loglevel=info
+      --concurrency=2
+      --queues=celery
+
+  # ── Celery Beat (scheduler for maintenance tasks) ────────────────────────────
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: meridian_beat
+    restart: unless-stopped
+    depends_on:
+      - redis
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://meridian:password@postgres:5432/meridian
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ../src:/app/src:ro
+    networks:
+      - meridian_net
+    command: >
+      celery -A src.api.worker
+      beat
+      --loglevel=info
+
+  # ── Celery Flower (task monitoring UI) ──────────────────────────────────────
+  flower:
+    image: mher/flower:2.0
+    container_name: meridian_flower
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      FLOWER_PORT: 5555
+    ports:
+      - "5555:5555"
+    networks:
+      - meridian_net
+
+  # ── MLflow tracking server ───────────────────────────────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.13.0
+    container_name: meridian_mlflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://meridian:password@postgres:5432/meridian
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow/artifacts
+    networks:
+      - meridian_net
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://meridian:password@postgres:5432/meridian
+      --default-artifact-root /mlflow/artifacts
+
+  # ── Streamlit demo UI ────────────────────────────────────────────────────────
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: meridian_ui
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      MERIDIAN_API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../src:/app/src:ro
+    networks:
+      - meridian_net
+    command: >
+      streamlit run src/ui/app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true

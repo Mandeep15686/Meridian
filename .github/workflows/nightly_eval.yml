@@ -1,0 +1,341 @@
+name: Nightly evaluation
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # 3:00 AM UTC every night
+  workflow_dispatch:        # allow manual trigger
+    inputs:
+      run_ragas:
+        description: "Run RAGAS evaluation"
+        type: boolean
+        default: true
+      run_gap_detection:
+        description: "Run gap detection F1 evaluation"
+        type: boolean
+        default: true
+      run_agent_judge:
+        description: "Run LLM-as-judge evaluation"
+        type: boolean
+        default: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ── RAGAS evaluation ───────────────────────────────────────────────────────
+  ragas-eval:
+    name: RAGAS RAG quality evaluation
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event.inputs.run_ragas == 'true'
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: meridian
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: meridian_eval
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://meridian:password@localhost:5432/meridian_eval
+      REDIS_URL: redis://localhost:6379/0
+      ENVIRONMENT: development
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /tmp/meridian_eval
+      LANGCHAIN_TRACING_V2: "false"
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI || 'http://localhost:5000' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libmagic1 ffmpeg poppler-utils
+
+      - name: Install Python dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run database migrations
+        run: alembic upgrade head
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+
+      - name: Ingest minimal corpus for eval
+        run: python scripts/ingest_corpus.py --source gdpr --dev-mode
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+
+      - name: Run RAGAS evaluation
+        id: ragas
+        run: |
+          python src/eval/run_ragas.py \
+            --dataset data/golden/gdpr_qa.jsonl \
+            --scope gdpr \
+            --output-mlflow
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+          MLFLOW_EXPERIMENT_NAME: meridian-eval-ci
+
+      - name: Upload RAGAS results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ragas-results-${{ github.run_id }}
+          path: /tmp/ragas_results.json
+          retention-days: 30
+
+  # ── Gap detection F1 evaluation ────────────────────────────────────────────
+  gap-detection-eval:
+    name: Gap detection F1 evaluation
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event.inputs.run_gap_detection == 'true'
+    needs: ragas-eval
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: meridian
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: meridian_eval
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://meridian:password@localhost:5432/meridian_eval
+      REDIS_URL: redis://localhost:6379/0
+      ENVIRONMENT: development
+      STORAGE_BACKEND: local
+      LOCAL_STORAGE_PATH: /tmp/meridian_eval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run database migrations
+        run: alembic upgrade head
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+
+      - name: Ingest minimal corpus
+        run: python scripts/ingest_corpus.py --source gdpr --dev-mode
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+
+      - name: Run gap detection F1 evaluation
+        id: gap_f1
+        run: |
+          python src/eval/run_gap_detection.py \
+            --dataset data/golden/gap_detection.jsonl \
+            --threshold 0.5 \
+            --output-mlflow
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+
+  # ── Agent judge evaluation ─────────────────────────────────────────────────
+  agent-judge-eval:
+    name: LLM-as-judge agent trace evaluation
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule' ||
+      github.event.inputs.run_agent_judge == 'true') &&
+      vars.LANGSMITH_ENABLED == 'true'
+    needs: gap-detection-eval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run agent judge evaluation
+        run: |
+          python src/eval/run_agent_judge.py \
+            --lookback-hours 26 \
+            --output-mlflow \
+            --verbose
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          LANGCHAIN_TRACING_V2: "true"
+          LANGCHAIN_PROJECT: meridian
+          MERIDIAN_API_KEY: ${{ secrets.MERIDIAN_API_KEY }}
+          DATABASE_URL: postgresql://x:x@localhost/x
+          REDIS_URL: redis://localhost:6379/0
+
+  # ── Threshold check and issue creation ────────────────────────────────────
+  check-and-alert:
+    name: Check thresholds and alert on regression
+    runs-on: ubuntu-latest
+    needs: [ragas-eval, gap-detection-eval]
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download eval artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results-${{ github.run_id }}"
+          merge-multiple: true
+          path: /tmp/eval_results/
+        continue-on-error: true
+
+      - name: Check job outcomes and create issue on failure
+        uses: actions/github-script@v7
+        if: >
+          needs.ragas-eval.result == 'failure' ||
+          needs.gap-detection-eval.result == 'failure'
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['eval-regression'],
+              state: 'open',
+            });
+
+            // Don't create duplicate issues for same regression
+            const today = new Date().toISOString().split('T')[0];
+            const existingToday = issues.find(i => i.title.includes(today));
+            if (existingToday) {
+              console.log('Issue already exists for today:', existingToday.html_url);
+              return;
+            }
+
+            const ragas_status = '${{ needs.ragas-eval.result }}';
+            const gap_status = '${{ needs.gap-detection-eval.result }}';
+
+            const body = [
+              '## Nightly eval regression detected',
+              '',
+              `**Date:** ${today}`,
+              `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              '### Job outcomes',
+              `- RAGAS evaluation: **${ragas_status}**`,
+              `- Gap detection F1: **${gap_status}**`,
+              '',
+              '### Next steps',
+              '1. Review the failed job logs in the Actions run linked above',
+              '2. Check MLflow for metric trends: run `mlflow ui` locally',
+              '3. Run `python src/eval/run_gap_detection.py --verbose` for per-example failures',
+              '4. If a recent code change caused the regression, revert or fix and re-run',
+              '',
+              '_This issue was automatically created by the nightly eval CI job._',
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Eval regression detected — ${today}`,
+              body,
+              labels: ['eval-regression', 'automated'],
+            });
+
+            console.log('Created regression issue for', today);
+
+  # ── Build and push Docker image on main ───────────────────────────────────
+  deploy:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: [ragas-eval, gap-detection-eval]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.ragas-eval.result == 'success' &&
+      needs.gap-detection-eval.result == 'success' &&
+      github.event_name == 'schedule'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        continue-on-error: true   # skip if GCP not configured
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+        if: steps.auth.outcome == 'success'
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        if: steps.auth.outcome == 'success'
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: |
+            us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/meridian/api:latest
+            us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/meridian/api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        if: steps.auth.outcome == 'success'
+        run: |
+          gcloud run deploy meridian-api \
+            --image=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/meridian/api:${{ github.sha }} \
+            --region=us-central1 \
+            --quiet
