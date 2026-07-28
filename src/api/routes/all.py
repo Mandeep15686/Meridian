@@ -215,9 +215,8 @@ async def get_job_status(
     )
 
     # Build summary for complete jobs
-    summary: JobSummary | None = None
     if job.status == JobStatus.COMPLETE and job.total_gaps is not None:
-        summary = JobSummary(
+        JobSummary(
             total_gaps=job.total_gaps,
             by_severity={
                 "critical": job.gaps_critical or 0,

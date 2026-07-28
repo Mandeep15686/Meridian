@@ -43,7 +43,7 @@ class JobStatus(enum.StrEnum):
     CANCELLED = "cancelled"
 
 
-class FileModality(str, enum.Enum):
+class FileModality(enum.StrEnum):
     DOCUMENT = "document"
     AUDIO = "audio"
     IMAGE = "image"
@@ -51,26 +51,26 @@ class FileModality(str, enum.Enum):
     UNKNOWN = "unknown"
 
 
-class AgentType(str, enum.Enum):
+class AgentType(enum.StrEnum):
     DOC_AGENT = "doc_agent"
     AUDIO_AGENT = "audio_agent"
     VISION_AGENT = "vision_agent"
     DATA_AGENT = "data_agent"
 
 
-class GapSeverity(str, enum.Enum):
+class GapSeverity(enum.StrEnum):
     CRITICAL = "critical"
     MAJOR = "major"
     MINOR = "minor"
 
 
-class ReportFormat(str, enum.Enum):
+class ReportFormat(enum.StrEnum):
     JSON = "json"
     PDF = "pdf"
     MARKDOWN = "markdown"
 
 
-class EvalType(str, enum.Enum):
+class EvalType(enum.StrEnum):
     RAGAS = "ragas"
     GAP_DETECTION_F1 = "gap_detection_f1"
     AGENT_JUDGE = "agent_judge"

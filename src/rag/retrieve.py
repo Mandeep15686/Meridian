@@ -33,9 +33,7 @@ _reranker = CrossEncoderReranker()
 
 async def embed_query(query: str) -> list[float]:
     """Embed a query string using the configured embedding model."""
-    from openai import AsyncOpenAI as _OAI
-
-    client = _OAI()  # reads OPENAI_API_KEY; set OPENAI_API_KEY = ANTHROPIC_API_KEY alias
+    client = AsyncOpenAI()  # reads OPENAI_API_KEY; set OPENAI_API_KEY = ANTHROPIC_API_KEY alias
     response = await client.embeddings.create(
         model=settings.EMBEDDING_MODEL,
         input=query[:8191],

@@ -29,8 +29,7 @@ async def _check_database() -> tuple[bool, str]:
         from src.db.session import engine
 
         async with engine.connect() as conn:
-            result = await conn.execute(text("SELECT version()"))
-            version = result.scalar()
+            await conn.execute(text("SELECT version()"))
             # Check pgvector
             vec_result = await conn.execute(
                 text("SELECT extversion FROM pg_extension WHERE extname = 'vector'")

@@ -177,8 +177,6 @@ async def upsert_chunks(
     inserted = 0
 
     for i, (content, embedding, meta) in enumerate(zip(chunks, embeddings, metadata, strict=True)):
-        content_hash = hashlib.sha256(content.encode()).hexdigest()
-
         vec_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
         stmt = text("""

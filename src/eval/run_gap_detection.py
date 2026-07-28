@@ -136,7 +136,7 @@ def _match_gaps(
 
     for pi, pred in enumerate(confident_preds):
         pred_article = pred.get("regulatory_article", "")
-        pred_has_gap = True  # predicted gaps always assert a gap exists
+        # pred_has_gap = True  # predicted gaps always assert a gap exists
 
         for gi, gt in enumerate(ground_truth):
             if gi in matched_gt:

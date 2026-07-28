@@ -321,7 +321,7 @@ def page_report() -> None:
     st.subheader("Identified gaps")
     severity_icons = {"critical": "🔴", "major": "🟡", "minor": "⚪"}
 
-    for i, gap in enumerate(gaps, 1):
+    for _, gap in enumerate(gaps, 1):
         icon = severity_icons.get(gap["severity"], "⚪")
         uncertain_label = " ⚠️ *uncertain*" if gap.get("is_uncertain") else ""
         with st.expander(

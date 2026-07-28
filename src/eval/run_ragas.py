@@ -113,11 +113,11 @@ async def run_ragas_eval(
             context_recall,
             faithfulness,
         )
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "RAGAS and datasets are required for evaluation. "
             "Install with: pip install ragas datasets"
-        )
+        ) from err
 
     from src.models.llm import ClaudeClient
 
