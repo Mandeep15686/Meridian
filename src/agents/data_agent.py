@@ -54,7 +54,9 @@ async def data_agent_node(state: MeridianState) -> dict:
             logger.warning("[data_agent] Empty DataFrame from %s", file.filename)
             return {"raw_extractions": []}
 
-        logger.info("[data_agent] Parsed %s: %d rows × %d cols", file.filename, len(df), len(df.columns))
+        logger.info(
+            "[data_agent] Parsed %s: %d rows × %d cols", file.filename, len(df), len(df.columns)
+        )
 
         # ── 2. TAPAS table QA ─────────────────────────────────────────────────
         tapas_answers = await _tapas.answer_batch(df, COMPLIANCE_TABLE_QUESTIONS)
@@ -101,16 +103,21 @@ async def data_agent_node(state: MeridianState) -> dict:
             if ans["answer"]:
                 summary_lines.append(f"{ans['question']}: {ans['answer']}")
         if forecast_output and forecast_output.get("anomaly_periods"):
+            anomaly_periods = [str(period) for period in forecast_output["anomaly_periods"][:3]]
             summary_lines.append(
-                f"Time series anomalies detected at: {', '.join(forecast_output['anomaly_periods'][:3])}"
+                f"Time series anomalies detected at: {', '.join(anomaly_periods)}"
             )
         high_risk = [a for a in anomaly_scores if a.get("risk_score", 0) > 0.7]
         if high_risk:
             summary_lines.append(f"{len(high_risk)} high-risk rows detected")
 
         duration_ms = int((time.monotonic() - t_start) * 1000)
-        logger.info("[data_agent] %s complete: %d TAPAS answers, %dms",
-                    file.filename, len(tapas_dicts), duration_ms)
+        logger.info(
+            "[data_agent] %s complete: %d TAPAS answers, %dms",
+            file.filename,
+            len(tapas_dicts),
+            duration_ms,
+        )
 
         extraction = AgentExtraction(
             agent="data_agent",
@@ -182,11 +189,13 @@ def _score_anomalies(df: pd.DataFrame) -> list[dict]:
         for idx in series[outlier_mask].index[:20]:
             val = series.loc[idx]
             z = abs((val - series.mean()) / series.std())
-            anomalies.append({
-                "row_index": int(idx),
-                "column": col,
-                "value": float(val),
-                "risk_score": min(1.0, float(z) / 10),
-            })
+            anomalies.append(
+                {
+                    "row_index": int(idx),
+                    "column": col,
+                    "value": float(val),
+                    "risk_score": min(1.0, float(z) / 10),
+                }
+            )
 
     return sorted(anomalies, key=lambda a: -a["risk_score"])

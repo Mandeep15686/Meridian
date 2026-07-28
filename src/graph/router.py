@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+from typing import Literal
 
 from langgraph.constants import Send
 
@@ -31,7 +32,7 @@ _MIME_TO_MODALITY: dict[str, str] = {
     "audio/x-m4a": "audio",
     "audio/flac": "audio",
     "audio/ogg": "audio",
-    "video/mp4": "audio",   # extract audio track
+    "video/mp4": "audio",  # extract audio track
     "video/quicktime": "audio",
     # Images
     "image/png": "image",
@@ -47,12 +48,26 @@ _MIME_TO_MODALITY: dict[str, str] = {
 }
 
 _EXTENSION_TO_MODALITY: dict[str, str] = {
-    ".pdf": "document", ".docx": "document", ".doc": "document",
-    ".txt": "document", ".md": "document", ".html": "document",
-    ".mp3": "audio", ".wav": "audio", ".m4a": "audio",
-    ".flac": "audio", ".ogg": "audio", ".mp4": "audio", ".mov": "audio",
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image",
-    ".csv": "tabular", ".xlsx": "tabular", ".xls": "tabular",
+    ".pdf": "document",
+    ".docx": "document",
+    ".doc": "document",
+    ".txt": "document",
+    ".md": "document",
+    ".html": "document",
+    ".mp3": "audio",
+    ".wav": "audio",
+    ".m4a": "audio",
+    ".flac": "audio",
+    ".ogg": "audio",
+    ".mp4": "audio",
+    ".mov": "audio",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".webp": "image",
+    ".csv": "tabular",
+    ".xlsx": "tabular",
+    ".xls": "tabular",
 }
 
 # Map modality → agent node name
@@ -63,23 +78,26 @@ _MODALITY_TO_AGENT: dict[str, str] = {
     "tabular": "data_agent",
 }
 
+Modality = Literal["document", "audio", "image", "tabular", "unknown"]
 
-def _detect_modality(file: UploadedFile) -> str:
+
+def _detect_modality(file: UploadedFile) -> Modality:
     """Determine the modality of a file from MIME type and extension."""
     # 1. Direct MIME type lookup
     if file.mime_type in _MIME_TO_MODALITY:
-        return _MIME_TO_MODALITY[file.mime_type]
+        return _MIME_TO_MODALITY[file.mime_type]  # type: ignore[return-value]
 
     # 2. Extension fallback
     import pathlib
+
     ext = pathlib.Path(file.filename).suffix.lower()
     if ext in _EXTENSION_TO_MODALITY:
-        return _EXTENSION_TO_MODALITY[ext]
+        return _EXTENSION_TO_MODALITY[ext]  # type: ignore[return-value]
 
     # 3. Guess from filename via stdlib mimetypes
     guessed_mime, _ = mimetypes.guess_type(file.filename)
     if guessed_mime and guessed_mime in _MIME_TO_MODALITY:
-        return _MIME_TO_MODALITY[guessed_mime]
+        return _MIME_TO_MODALITY[guessed_mime]  # type: ignore[return-value]
 
     logger.warning("Could not determine modality for file %s (%s)", file.filename, file.mime_type)
     return "unknown"

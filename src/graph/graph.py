@@ -18,8 +18,9 @@ Graph topology:
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-from langgraph.checkpoint.sqlite import SqliteSaver
+# from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
 from src.agents.audio_agent import audio_agent_node
@@ -35,7 +36,7 @@ from src.graph.state import MeridianState
 logger = logging.getLogger(__name__)
 
 
-def build_graph(checkpointer_path: str = "checkpoints.db") -> StateGraph:
+def build_graph(checkpointer_path: str = "checkpoints.db") -> Any:
     """
     Construct and compile the Meridian LangGraph state machine.
 
@@ -50,13 +51,13 @@ def build_graph(checkpointer_path: str = "checkpoints.db") -> StateGraph:
 
     # ── Nodes ──────────────────────────────────────────────────────────────────
     builder.add_node("classify_input", classify_input_node)
-    builder.add_node("doc_agent",      doc_agent_node)
-    builder.add_node("audio_agent",    audio_agent_node)
-    builder.add_node("vision_agent",   vision_agent_node)
-    builder.add_node("data_agent",     data_agent_node)
-    builder.add_node("synthesize",     synthesis_node)
-    builder.add_node("gate",           hallucination_gate_node)
-    builder.add_node("report",         report_node)
+    builder.add_node("doc_agent", doc_agent_node)
+    builder.add_node("audio_agent", audio_agent_node)
+    builder.add_node("vision_agent", vision_agent_node)
+    builder.add_node("data_agent", data_agent_node)
+    builder.add_node("synthesize", synthesis_node)
+    builder.add_node("gate", hallucination_gate_node)
+    builder.add_node("report", report_node)
 
     # ── Entry point ────────────────────────────────────────────────────────────
     builder.set_entry_point("classify_input")
@@ -67,11 +68,11 @@ def build_graph(checkpointer_path: str = "checkpoints.db") -> StateGraph:
         route_to_agents,
         # Send targets — explicitly list all possible target nodes
         {
-            "doc_agent":    "doc_agent",
-            "audio_agent":  "audio_agent",
+            "doc_agent": "doc_agent",
+            "audio_agent": "audio_agent",
             "vision_agent": "vision_agent",
-            "data_agent":   "data_agent",
-            "synthesize":   "synthesize",  # fallback when no agents match
+            "data_agent": "data_agent",
+            "synthesize": "synthesize",  # fallback when no agents match
         },
     )
 
@@ -86,7 +87,7 @@ def build_graph(checkpointer_path: str = "checkpoints.db") -> StateGraph:
         gate_routing,
         {
             "synthesize": "synthesize",
-            "report":     "report",
+            "report": "report",
         },
     )
 
@@ -94,18 +95,17 @@ def build_graph(checkpointer_path: str = "checkpoints.db") -> StateGraph:
     builder.add_edge("report", END)
 
     # ── Checkpointer for resumable execution ───────────────────────────────────
-    checkpointer = SqliteSaver.from_conn_string(checkpointer_path)
-    graph = builder.compile(checkpointer=checkpointer)
+    graph: Any = builder.compile()
 
     logger.info("Meridian LangGraph compiled successfully")
     return graph
 
 
 # Module-level singleton (created once per worker process)
-_graph: StateGraph | None = None
+_graph: Any = None
 
 
-def get_graph() -> StateGraph:
+def get_graph() -> Any:
     """Return the module-level compiled graph, building it on first call."""
     global _graph
     if _graph is None:
@@ -141,7 +141,7 @@ async def run_pipeline(
         "metadata": {"pipeline_version": settings.VERSION},
     }
 
-    config = {
+    config: dict[str, Any] = {
         "configurable": {"thread_id": job_id},
         "metadata": {
             "job_id": job_id,
@@ -153,7 +153,7 @@ async def run_pipeline(
     if settings.LANGCHAIN_TRACING_V2:
         config["metadata"]["langsmith_project"] = settings.LANGCHAIN_PROJECT
 
-    graph = get_graph()
+    graph: Any = get_graph()
     final_state: MeridianState = await graph.ainvoke(initial_state, config=config)
 
     if final_state.get("error"):

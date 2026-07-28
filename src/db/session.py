@@ -15,9 +15,7 @@ from sqlalchemy.ext.asyncio import (
 from src.config import settings
 
 # Build the async-compatible URL (asyncpg driver)
-_async_url = settings.DATABASE_URL.replace(
-    "postgresql://", "postgresql+asyncpg://"
-).replace(
+_async_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://").replace(
     "postgresql+psycopg2://", "postgresql+asyncpg://"
 )
 

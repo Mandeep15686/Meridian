@@ -31,9 +31,7 @@ console = Console()
 app = typer.Typer(help="Meridian regulatory corpus ingestion tool")
 
 
-async def _ensure_corpus_record(
-    session, loader, force_refresh: bool = False
-) -> str:
+async def _ensure_corpus_record(session, loader, force_refresh: bool = False) -> str:
     """
     Ensure a corpus record exists in the database.
     Returns the corpus ID.
@@ -115,8 +113,9 @@ async def ingest_corpus(
         try:
             # Write content to a temp file for the ingestion pipeline
             suffix = Path(doc.filename).suffix or ".txt"
-            with tempfile.NamedTemporaryFile(mode="w", suffix=suffix,
-                                             delete=False, encoding="utf-8") as tmp:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=suffix, delete=False, encoding="utf-8"
+            ) as tmp:
                 tmp.write(doc.content)
                 tmp_path = Path(tmp.name)
 
@@ -177,20 +176,24 @@ async def ingest_corpus(
 def main(
     source: str = typer.Option(
         "gdpr",
-        "--source", "-s",
+        "--source",
+        "-s",
         help="Comma-separated corpus slugs, or 'all' for everything. "
-             "Available: gdpr, soc2, iso27001, sec_sp, sec_sid, cfpb, eu_ai_act",
+        "Available: gdpr, soc2, iso27001, sec_sp, sec_sid, cfpb, eu_ai_act",
     ),
     force_reingest: bool = typer.Option(
-        False, "--force-reingest",
+        False,
+        "--force-reingest",
         help="Re-ingest all documents even if content hash already exists.",
     ),
     dev_mode: bool = typer.Option(
-        False, "--dev-mode",
+        False,
+        "--dev-mode",
         help="Ingest only 3 documents per corpus (fast, for local development).",
     ),
     max_documents: int | None = typer.Option(
-        None, "--max-documents",
+        None,
+        "--max-documents",
         help="Maximum documents per corpus (useful for testing).",
     ),
 ) -> None:
@@ -216,18 +219,22 @@ def main(
     if dev_mode:
         console.print("[yellow]Dev mode enabled — minimal ingestion[/yellow]")
     if force_reingest:
-        console.print("[yellow]Force re-ingest enabled — all documents will be re-processed[/yellow]")
+        console.print(
+            "[yellow]Force re-ingest enabled — all documents will be re-processed[/yellow]"
+        )
 
     total_stats = {"documents_processed": 0, "chunks_inserted": 0, "chunks_total": 0}
 
     for corpus_slug in selected:
         try:
-            stats = asyncio.run(ingest_corpus(
-                corpus_id_str=corpus_slug,
-                force_reingest=force_reingest,
-                dev_mode=dev_mode,
-                max_documents=max_documents,
-            ))
+            stats = asyncio.run(
+                ingest_corpus(
+                    corpus_id_str=corpus_slug,
+                    force_reingest=force_reingest,
+                    dev_mode=dev_mode,
+                    max_documents=max_documents,
+                )
+            )
             total_stats["documents_processed"] += stats["documents_processed"]
             total_stats["chunks_inserted"] += stats["chunks_inserted"]
             total_stats["chunks_total"] += stats["chunks_total"]

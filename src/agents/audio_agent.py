@@ -106,7 +106,10 @@ async def audio_agent_node(state: MeridianState) -> dict:
         duration_ms = int((time.monotonic() - t_start) * 1000)
         logger.info(
             "[audio_agent] %s complete: %d segments, %d speakers, %dms",
-            file.filename, len(state_segments), len(speakers), duration_ms,
+            file.filename,
+            len(state_segments),
+            len(speakers),
+            duration_ms,
         )
 
         extraction = AgentExtraction(

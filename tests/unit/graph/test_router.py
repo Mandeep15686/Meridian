@@ -22,7 +22,6 @@ def _make_file(filename: str, mime_type: str, modality: str = "unknown") -> Uplo
 
 
 class TestModalityDetection:
-
     def test_pdf_detected_as_document(self):
         f = _make_file("policy.pdf", "application/pdf")
         assert _detect_modality(f) == "document"
@@ -91,7 +90,6 @@ class TestModalityDetection:
 
 
 class TestClassifyInputNode:
-
     def test_single_file_classified(self):
         file = _make_file("policy.pdf", "application/pdf")
         state = make_state(input_files=[file])
@@ -146,7 +144,6 @@ class TestClassifyInputNode:
 
 
 class TestRouteToAgents:
-
     def test_document_file_routes_to_doc_agent(self):
         from langgraph.constants import Send
 

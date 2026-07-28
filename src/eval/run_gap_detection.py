@@ -30,14 +30,16 @@ app = typer.Typer()
 
 # ── Data types ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class GapExample:
     """A single labeled gap detection example."""
+
     example_id: str
     policy_text: str
     regulation_scope: list[str]
-    ground_truth_gaps: list[dict[str, Any]]   # [{has_gap, regulatory_article, gap_type}]
-    source: str = "manual"                     # "sec_enforcement", "manual", "synthetic"
+    ground_truth_gaps: list[dict[str, Any]]  # [{has_gap, regulatory_article, gap_type}]
+    source: str = "manual"  # "sec_enforcement", "manual", "synthetic"
 
 
 @dataclass
@@ -68,6 +70,7 @@ class EvalSummary:
 
 # ── Dataset loading ───────────────────────────────────────────────────────────
 
+
 def load_gap_dataset(path: Path) -> list[GapExample]:
     """Load a JSONL gap detection dataset."""
     examples: list[GapExample] = []
@@ -78,19 +81,22 @@ def load_gap_dataset(path: Path) -> list[GapExample]:
                 continue
             try:
                 data = json.loads(line)
-                examples.append(GapExample(
-                    example_id=data["example_id"],
-                    policy_text=data["policy_text"],
-                    regulation_scope=data["regulation_scope"],
-                    ground_truth_gaps=data["ground_truth_gaps"],
-                    source=data.get("source", "manual"),
-                ))
+                examples.append(
+                    GapExample(
+                        example_id=data["example_id"],
+                        policy_text=data["policy_text"],
+                        regulation_scope=data["regulation_scope"],
+                        ground_truth_gaps=data["ground_truth_gaps"],
+                        source=data.get("source", "manual"),
+                    )
+                )
             except (json.JSONDecodeError, KeyError) as exc:
                 logger.warning("Skipping invalid example on line %d: %s", i + 1, exc)
     return examples
 
 
 # ── Gap matching ──────────────────────────────────────────────────────────────
+
 
 def _normalize_article(article: str) -> str:
     """Normalise article strings for comparison (case-insensitive, strip whitespace)."""
@@ -121,8 +127,7 @@ def _match_gaps(
     """
     # Filter predictions by confidence threshold
     confident_preds = [
-        g for g in predicted
-        if float(g.get("confidence", 1.0)) >= confidence_threshold
+        g for g in predicted if float(g.get("confidence", 1.0)) >= confidence_threshold
     ]
 
     # Match each ground truth gap to at most one prediction
@@ -157,6 +162,7 @@ def _match_gaps(
 
 # ── Pipeline runner (mocked for eval harness) ─────────────────────────────────
 
+
 async def _run_detection_on_example(
     example: GapExample,
     confidence_threshold: float,
@@ -177,8 +183,7 @@ async def _run_detection_on_example(
 
         # Format context and run synthesis
         ctx_text = "\n\n".join(
-            f"[{c.regulation.upper()} {c.article or ''}]\n{c.content}"
-            for c in chunks[:5]
+            f"[{c.regulation.upper()} {c.article or ''}]\n{c.content}" for c in chunks[:5]
         )
 
         gap_dicts = await claude.synthesize(
@@ -217,6 +222,7 @@ async def _run_detection_on_example(
 
 # ── Main evaluation ───────────────────────────────────────────────────────────
 
+
 async def run_gap_detection_eval(
     dataset_path: Path,
     confidence_threshold: float = 0.5,
@@ -241,8 +247,10 @@ async def run_gap_detection_eval(
     if not examples:
         raise ValueError(f"No examples loaded from {dataset_path}")
 
-    console.print(f"[cyan]Running gap detection eval on {len(examples)} examples "
-                  f"(threshold={confidence_threshold})...[/cyan]")
+    console.print(
+        f"[cyan]Running gap detection eval on {len(examples)} examples "
+        f"(threshold={confidence_threshold})...[/cyan]"
+    )
     t_start = time.monotonic()
 
     # Run examples (with concurrency limit to avoid hammering the API)
@@ -359,13 +367,17 @@ def _print_gap_results(summary: EvalSummary) -> None:
         fw_table.add_column("F1", width=12)
         for fw, scores in summary.per_framework.items():
             fw_table.add_row(
-                fw.upper(), f"{scores['precision']:.4f}",
-                f"{scores['recall']:.4f}", f"{scores['f1']:.4f}",
+                fw.upper(),
+                f"{scores['precision']:.4f}",
+                f"{scores['recall']:.4f}",
+                f"{scores['f1']:.4f}",
             )
         console.print(fw_table)
 
     if passed:
-        console.print(f"[green]✓ F1 {summary.f1:.4f} >= threshold {THRESHOLDS.gap_detection_f1}[/green]")
+        console.print(
+            f"[green]✓ F1 {summary.f1:.4f} >= threshold {THRESHOLDS.gap_detection_f1}[/green]"
+        )
     else:
         console.print(f"[red]✗ F1 {summary.f1:.4f} < threshold {THRESHOLDS.gap_detection_f1}[/red]")
 
@@ -373,24 +385,29 @@ def _print_gap_results(summary: EvalSummary) -> None:
 def _log_gap_to_mlflow(summary: EvalSummary, dataset_path: Path) -> None:
     try:
         import mlflow
+
         mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
         mlflow.set_experiment(settings.MLFLOW_EXPERIMENT_NAME)
 
         with mlflow.start_run(run_name="gap_detection_eval"):
-            mlflow.log_params({
-                "pipeline_version": settings.VERSION,
-                "dataset": str(dataset_path),
-                "confidence_threshold": summary.threshold,
-                "total_examples": summary.total_examples,
-            })
-            mlflow.log_metrics({
-                "gap_precision": summary.precision,
-                "gap_recall": summary.recall,
-                "gap_f1": summary.f1,
-                "gap_tp": summary.total_true_positives,
-                "gap_fp": summary.total_false_positives,
-                "gap_fn": summary.total_false_negatives,
-            })
+            mlflow.log_params(
+                {
+                    "pipeline_version": settings.VERSION,
+                    "dataset": str(dataset_path),
+                    "confidence_threshold": summary.threshold,
+                    "total_examples": summary.total_examples,
+                }
+            )
+            mlflow.log_metrics(
+                {
+                    "gap_precision": summary.precision,
+                    "gap_recall": summary.recall,
+                    "gap_f1": summary.f1,
+                    "gap_tp": summary.total_true_positives,
+                    "gap_fp": summary.total_false_positives,
+                    "gap_fn": summary.total_false_negatives,
+                }
+            )
         console.print("[green]Results logged to MLflow[/green]")
     except Exception as exc:
         logger.warning("MLflow logging failed: %s", exc)
@@ -398,11 +415,13 @@ def _log_gap_to_mlflow(summary: EvalSummary, dataset_path: Path) -> None:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+
 @app.command()
 def main(
     dataset: Path = typer.Option(
         Path("data/golden/gap_detection.jsonl"),
-        "--dataset", "-d",
+        "--dataset",
+        "-d",
     ),
     threshold: float = typer.Option(0.5, "--threshold", "-t", help="Confidence threshold"),
     output_mlflow: bool = typer.Option(False, "--output-mlflow"),

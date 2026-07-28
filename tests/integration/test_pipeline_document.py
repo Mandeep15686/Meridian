@@ -20,6 +20,7 @@ pytestmark = pytest.mark.integration
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def mock_claude_gaps() -> list[dict]:
     return [
@@ -47,13 +48,14 @@ def mock_claude_gaps() -> list[dict]:
 @pytest.fixture
 def mock_chunks() -> list:
     from tests.conftest import make_retrieved_chunk
+
     return [make_retrieved_chunk("chunk-gdpr-article-13")]
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
-class TestDocumentOnlyPipeline:
 
+class TestDocumentOnlyPipeline:
     @pytest.mark.asyncio
     async def test_pipeline_produces_verified_gaps(
         self, sample_policy_pdf_path: Path, mock_claude_gaps: list, mock_chunks: list
@@ -81,16 +83,28 @@ class TestDocumentOnlyPipeline:
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
             patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=mock_chunks),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=mock_chunks,
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
-            patch("src.agents.synthesis_agent._claude.synthesize",
-                  new_callable=AsyncMock, return_value=mock_claude_gaps),
-            patch("src.agents.synthesis_agent._claude.generate_executive_summary",
-                  new_callable=AsyncMock, return_value="Test executive summary."),
+            patch(
+                "src.agents.synthesis_agent._claude.synthesize",
+                new_callable=AsyncMock,
+                return_value=mock_claude_gaps,
+            ),
+            patch(
+                "src.agents.synthesis_agent._claude.generate_executive_summary",
+                new_callable=AsyncMock,
+                return_value="Test executive summary.",
+            ),
             patch("src.graph.nodes.gate._similarity_model") as mock_sim,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
@@ -128,6 +142,7 @@ class TestDocumentOnlyPipeline:
 
         policy_bytes = sample_policy_pdf_path.read_bytes()
         from tests.conftest import mock_storage
+
         storage_mock = mock_storage(policy_bytes)
 
         input_files = [
@@ -145,14 +160,23 @@ class TestDocumentOnlyPipeline:
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
             patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=mock_chunks),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=mock_chunks,
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
-            patch("src.agents.synthesis_agent._claude.synthesize",
-                  new_callable=AsyncMock, side_effect=Exception("Claude API unavailable")),
+            patch(
+                "src.agents.synthesis_agent._claude.synthesize",
+                new_callable=AsyncMock,
+                side_effect=Exception("Claude API unavailable"),
+            ),
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -190,10 +214,16 @@ class TestDocumentOnlyPipeline:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.synthesis_agent._claude.synthesize",
-                  new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.synthesis_agent._claude.generate_executive_summary",
-                  new_callable=AsyncMock, return_value="No gaps found."),
+            patch(
+                "src.agents.synthesis_agent._claude.synthesize",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "src.agents.synthesis_agent._claude.generate_executive_summary",
+                new_callable=AsyncMock,
+                return_value="No gaps found.",
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
             patch("src.graph.nodes.gate._similarity_model") as mock_sim,
         ):

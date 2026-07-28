@@ -25,20 +25,30 @@ from src.config import settings
 from src.eval.thresholds import THRESHOLDS
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_message_text(content: Any) -> str:
+    parts: list[str] = []
+    for block in content or []:
+        text = getattr(block, "text", None)
+        if isinstance(text, str):
+            parts.append(text)
+    return "".join(parts)
 console = Console()
 app = typer.Typer()
 
 
 # ── Data types ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TraceScore:
     run_id: str
     job_id: str
-    routing_score: float         # 0–5
-    tool_use_score: float        # 0–5
-    citation_accuracy_score: float   # 0–5
-    overall_score: float         # mean of three
+    routing_score: float  # 0–5
+    tool_use_score: float  # 0–5
+    citation_accuracy_score: float  # 0–5
+    overall_score: float  # mean of three
     reasoning: str
     latency_ms: int = 0
 
@@ -46,15 +56,16 @@ class TraceScore:
 @dataclass
 class JudgeEvalSummary:
     traces_evaluated: int
-    routing_accuracy: float       # mean routing / 5
-    tool_use_quality: float       # mean tool_use / 5
-    citation_accuracy: float      # mean citation / 5
-    overall_quality: float        # mean overall / 5
-    low_quality_runs: list[str]   # run IDs with overall < 3.0
+    routing_accuracy: float  # mean routing / 5
+    tool_use_quality: float  # mean tool_use / 5
+    citation_accuracy: float  # mean citation / 5
+    overall_quality: float  # mean overall / 5
+    low_quality_runs: list[str]  # run IDs with overall < 3.0
     duration_seconds: float = 0.0
 
 
 # ── LangSmith trace fetching ──────────────────────────────────────────────────
+
 
 def _fetch_recent_traces(lookback_hours: int = 24) -> list[dict[str, Any]]:
     """
@@ -63,21 +74,26 @@ def _fetch_recent_traces(lookback_hours: int = 24) -> list[dict[str, Any]]:
     Returns a list of run dictionaries from the LangSmith API.
     """
     if not settings.LANGCHAIN_TRACING_V2 or not settings.LANGCHAIN_API_KEY:
-        console.print("[yellow]LangSmith tracing not configured. Returning empty trace list.[/yellow]")
+        console.print(
+            "[yellow]LangSmith tracing not configured. Returning empty trace list.[/yellow]"
+        )
         return []
 
     try:
         from langsmith import Client
+
         client = Client(api_key=settings.LANGCHAIN_API_KEY)
 
         start_time = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
-        runs = list(client.list_runs(
-            project_name=settings.LANGCHAIN_PROJECT,
-            run_type="chain",
-            start_time=start_time,
-            filter=f'eq(name, "meridian_pipeline")',
-            limit=100,
-        ))
+        runs = list(
+            client.list_runs(
+                project_name=settings.LANGCHAIN_PROJECT,
+                run_type="chain",
+                start_time=start_time,
+                filter=f'eq(name, "meridian_pipeline")',
+                limit=100,
+            )
+        )
 
         return [
             {
@@ -92,7 +108,8 @@ def _fetch_recent_traces(lookback_hours: int = 24) -> list[dict[str, Any]]:
                         "outputs": cr.outputs or {},
                         "error": cr.error,
                         "latency_ms": int((cr.end_time - cr.start_time).total_seconds() * 1000)
-                        if cr.end_time and cr.start_time else 0,
+                        if cr.end_time and cr.start_time
+                        else 0,
                     }
                     for cr in (r.child_runs or [])
                 ],
@@ -111,17 +128,25 @@ def _fetch_trace_by_job(job_id: str) -> dict[str, Any] | None:
         return None
     try:
         from langsmith import Client
+
         client = Client(api_key=settings.LANGCHAIN_API_KEY)
-        runs = list(client.list_runs(
-            project_name=settings.LANGCHAIN_PROJECT,
-            filter=f'has(metadata, {{"job_id": "{job_id}"}})',
-            limit=1,
-        ))
+        runs = list(
+            client.list_runs(
+                project_name=settings.LANGCHAIN_PROJECT,
+                filter=f'has(metadata, {{"job_id": "{job_id}"}})',
+                limit=1,
+            )
+        )
         if not runs:
             return None
         r = runs[0]
-        return {"id": str(r.id), "name": r.name, "inputs": r.inputs, "outputs": r.outputs,
-                "child_runs": []}
+        return {
+            "id": str(r.id),
+            "name": r.name,
+            "inputs": r.inputs,
+            "outputs": r.outputs,
+            "child_runs": [],
+        }
     except Exception:
         return None
 
@@ -172,6 +197,7 @@ Evaluate this trace and return JSON scores."""
 
 # ── Judge evaluation ──────────────────────────────────────────────────────────
 
+
 async def _judge_trace(trace: dict[str, Any]) -> TraceScore | None:
     """Ask Claude to evaluate a single LangSmith trace."""
     from src.models.llm import ClaudeClient
@@ -184,8 +210,11 @@ async def _judge_trace(trace: dict[str, Any]) -> TraceScore | None:
         # Extract meaningful info from trace
         child_runs = trace.get("child_runs", [])
         agents_invoked = [
-            cr["name"] for cr in child_runs
-            if any(a in cr["name"] for a in ("doc_agent", "audio_agent", "vision_agent", "data_agent"))
+            cr["name"]
+            for cr in child_runs
+            if any(
+                a in cr["name"] for a in ("doc_agent", "audio_agent", "vision_agent", "data_agent")
+            )
         ]
 
         routing_log = ""
@@ -226,7 +255,7 @@ async def _judge_trace(trace: dict[str, Any]) -> TraceScore | None:
             messages=[{"role": "user", "content": user_content}],
         )
 
-        raw = message.content[0].text.strip()
+        raw = _extract_message_text(message.content).strip()
         # Strip markdown fences
         if raw.startswith("```"):
             raw = "\n".join(raw.split("\n")[1:])
@@ -347,17 +376,20 @@ async def run_agent_judge(
     if output_mlflow:
         try:
             import mlflow
+
             mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
             mlflow.set_experiment(settings.MLFLOW_EXPERIMENT_NAME)
             with mlflow.start_run(run_name="agent_judge_eval"):
-                mlflow.log_metrics({
-                    "agent_routing_accuracy": routing_acc,
-                    "tool_use_quality_avg": tool_quality,
-                    "citation_accuracy_avg": citation_acc,
-                    "agent_overall_quality": overall,
-                    "traces_evaluated": len(valid_scores),
-                    "low_quality_count": len(low_quality),
-                })
+                mlflow.log_metrics(
+                    {
+                        "agent_routing_accuracy": routing_acc,
+                        "tool_use_quality_avg": tool_quality,
+                        "citation_accuracy_avg": citation_acc,
+                        "agent_overall_quality": overall,
+                        "traces_evaluated": len(valid_scores),
+                        "low_quality_count": len(low_quality),
+                    }
+                )
         except Exception as exc:
             logger.warning("MLflow logging failed: %s", exc)
 
@@ -373,7 +405,11 @@ def _print_judge_results(summary: JudgeEvalSummary) -> None:
 
     rows = [
         ("Traces evaluated", str(summary.traces_evaluated), "—"),
-        ("Routing accuracy", f"{summary.routing_accuracy:.4f}", f"{THRESHOLDS.agent_routing_accuracy:.4f}"),
+        (
+            "Routing accuracy",
+            f"{summary.routing_accuracy:.4f}",
+            f"{THRESHOLDS.agent_routing_accuracy:.4f}",
+        ),
         ("Tool use quality", f"{summary.tool_use_quality:.4f}", "—"),
         ("Citation accuracy", f"{summary.citation_accuracy:.4f}", "—"),
         ("Overall quality", f"{summary.overall_quality:.4f}", "—"),
@@ -387,10 +423,7 @@ def _print_judge_results(summary: JudgeEvalSummary) -> None:
             t_val = float(threshold)
             v_val = float(value)
             passed = v_val >= t_val
-            table.add_row(
-                label, value, threshold,
-                "[green]✓[/green]" if passed else "[red]✗[/red]"
-            )
+            table.add_row(label, value, threshold, "[green]✓[/green]" if passed else "[red]✗[/red]")
 
     console.print(table)
 
@@ -403,12 +436,14 @@ def main(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Run LLM-as-judge evaluation on recent LangSmith traces."""
-    asyncio.run(run_agent_judge(
-        lookback_hours=lookback,
-        job_id=job,
-        output_mlflow=output_mlflow,
-        verbose=verbose,
-    ))
+    asyncio.run(
+        run_agent_judge(
+            lookback_hours=lookback,
+            job_id=job,
+            output_mlflow=output_mlflow,
+            verbose=verbose,
+        )
+    )
 
 
 if __name__ == "__main__":

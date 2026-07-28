@@ -13,6 +13,7 @@ import logging
 import time
 from pathlib import Path
 from typing import Any
+from typing import cast
 
 import typer
 from rich.console import Console
@@ -26,7 +27,17 @@ console = Console()
 app = typer.Typer()
 
 
+def _extract_message_text(content: Any) -> str:
+    parts: list[str] = []
+    for block in content or []:
+        text = getattr(block, "text", None)
+        if isinstance(text, str):
+            parts.append(text)
+    return "".join(parts)
+
+
 # ── Dataset loading ───────────────────────────────────────────────────────────
+
 
 def load_golden_dataset(path: Path) -> list[dict[str, Any]]:
     """
@@ -54,13 +65,15 @@ def load_golden_dataset(path: Path) -> list[dict[str, Any]]:
 
 # ── Retrieval for context augmentation ────────────────────────────────────────
 
+
 async def _fetch_contexts_for_example(
     example: dict[str, Any],
     regulation_scope: list[str],
 ) -> list[str]:
     """If the example has no contexts, retrieve them live from the RAG pipeline."""
-    if example.get("contexts"):
-        return example["contexts"]
+    contexts = example.get("contexts")
+    if isinstance(contexts, list) and all(isinstance(item, str) for item in contexts):
+        return contexts
 
     from src.db.session import get_db_session
     from src.rag.retrieve import hybrid_retrieve
@@ -72,6 +85,7 @@ async def _fetch_contexts_for_example(
 
 
 # ── RAGAS evaluation ─────────────────────────────────────────────────────────
+
 
 async def run_ragas_eval(
     dataset_path: Path,
@@ -107,6 +121,7 @@ async def run_ragas_eval(
         )
 
     from src.models.llm import ClaudeClient
+
     claude = ClaudeClient()
 
     examples = load_golden_dataset(dataset_path)
@@ -138,16 +153,18 @@ async def run_ragas_eval(
             answer_msg = await claude._async_client.messages.create(
                 model=settings.SYNTHESIS_MODEL,
                 max_tokens=256,
-                messages=[{
-                    "role": "user",
-                    "content": (
-                        f"Context:\n{context_text}\n\n"
-                        f"Question: {question}\n\n"
-                        f"Answer concisely based only on the context provided."
-                    ),
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Context:\n{context_text}\n\n"
+                            f"Question: {question}\n\n"
+                            f"Answer concisely based only on the context provided."
+                        ),
+                    }
+                ],
             )
-            generated_answer = answer_msg.content[0].text.strip()
+            generated_answer = _extract_message_text(answer_msg.content).strip()
         except Exception as exc:
             logger.warning("Answer generation failed for example %d: %s", i + 1, exc)
             generated_answer = "Unable to generate answer."
@@ -158,12 +175,14 @@ async def run_ragas_eval(
         ground_truths.append(ground_truth)
 
     # Build HuggingFace Dataset for RAGAS
-    ragas_dataset = Dataset.from_dict({
-        "question": questions,
-        "answer": answers,
-        "contexts": contexts,
-        "ground_truth": ground_truths,
-    })
+    ragas_dataset = Dataset.from_dict(
+        {
+            "question": questions,
+            "answer": answers,
+            "contexts": contexts,
+            "ground_truth": ground_truths,
+        }
+    )
 
     # Run RAGAS
     console.print("[cyan]Computing RAGAS metrics...[/cyan]")
@@ -172,7 +191,8 @@ async def run_ragas_eval(
         metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
     )
 
-    df = result.to_pandas()
+    ragas_result = cast(Any, result)
+    df = ragas_result.to_pandas()
     metrics: dict[str, float] = {
         "ragas_faithfulness": float(df["faithfulness"].mean()),
         "ragas_answer_relevancy": float(df["answer_relevancy"].mean()),
@@ -236,18 +256,21 @@ def _log_to_mlflow(
 ) -> None:
     try:
         import mlflow
+
         mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
         mlflow.set_experiment(settings.MLFLOW_EXPERIMENT_NAME)
 
         with mlflow.start_run(run_name="ragas_eval"):
-            mlflow.log_params({
-                "pipeline_version": settings.VERSION,
-                "dataset": str(dataset_path),
-                "regulation_scope": ",".join(regulation_scope),
-                "retrieval_top_k": settings.RETRIEVAL_TOP_K_RERANK,
-                "reranker_model": settings.RERANKER_MODEL,
-                "synthesis_model": settings.SYNTHESIS_MODEL,
-            })
+            mlflow.log_params(
+                {
+                    "pipeline_version": settings.VERSION,
+                    "dataset": str(dataset_path),
+                    "regulation_scope": ",".join(regulation_scope),
+                    "retrieval_top_k": settings.RETRIEVAL_TOP_K_RERANK,
+                    "reranker_model": settings.RERANKER_MODEL,
+                    "synthesis_model": settings.SYNTHESIS_MODEL,
+                }
+            )
             mlflow.log_metrics(metrics)
         console.print("[green]Results logged to MLflow[/green]")
     except Exception as exc:
@@ -256,16 +279,19 @@ def _log_to_mlflow(
 
 # ── CLI entry point ───────────────────────────────────────────────────────────
 
+
 @app.command()
 def main(
     dataset: Path = typer.Option(
         Path("data/golden/gdpr_qa.jsonl"),
-        "--dataset", "-d",
+        "--dataset",
+        "-d",
         help="Path to the JSONL golden QA dataset",
     ),
     scope: list[str] = typer.Option(
         ["gdpr"],
-        "--scope", "-s",
+        "--scope",
+        "-s",
         help="Regulatory scope(s) for retrieval",
     ),
     output_mlflow: bool = typer.Option(False, "--output-mlflow", help="Log to MLflow"),

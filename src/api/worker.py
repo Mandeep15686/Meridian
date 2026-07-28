@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
+from typing import Any, cast
 
 from celery import Celery
 from sqlalchemy import select, update
@@ -26,11 +27,11 @@ celery_app.conf.update(
     result_serializer="json",
     accept_content=["json"],
     task_track_started=True,
-    task_acks_late=True,              # acknowledge after completion (safe for crash recovery)
+    task_acks_late=True,  # acknowledge after completion (safe for crash recovery)
     task_reject_on_worker_lost=True,  # re-queue on worker crash
-    worker_prefetch_multiplier=1,     # one job at a time per worker thread
+    worker_prefetch_multiplier=1,  # one job at a time per worker thread
     task_soft_time_limit=settings.CELERY_TASK_TIMEOUT - 60,  # soft limit triggers warning
-    task_time_limit=settings.CELERY_TASK_TIMEOUT,            # hard limit kills the task
+    task_time_limit=settings.CELERY_TASK_TIMEOUT,  # hard limit kills the task
     result_expires=settings.JOB_TTL_DAYS * 86400,
     beat_schedule={
         "expire-old-jobs": {
@@ -45,7 +46,7 @@ celery_app.conf.update(
 )
 
 
-def _run_async(coro):
+def _run_async(coro: Any) -> Any:
     """Run a coroutine in a new event loop (Celery workers are sync by default)."""
     try:
         loop = asyncio.get_event_loop()
@@ -60,13 +61,14 @@ def _run_async(coro):
 
 # ── Main compliance job task ──────────────────────────────────────────────────
 
+
 @celery_app.task(
     name="run_compliance_job",
     bind=True,
     max_retries=3,
     default_retry_delay=30,
 )
-def run_compliance_job(self, job_id: str) -> dict:
+def run_compliance_job(self: Any, job_id: str) -> dict[str, Any]:
     """
     Execute the full Meridian compliance analysis pipeline for a job.
 
@@ -76,10 +78,10 @@ def run_compliance_job(self, job_id: str) -> dict:
     3. Persists compliance gaps and reports to the database
     4. Delivers the webhook notification
     """
-    return _run_async(_run_compliance_job_async(self, job_id))
+    return cast(dict[str, Any], _run_async(_run_compliance_job_async(self, job_id)))
 
 
-async def _run_compliance_job_async(task, job_id: str) -> dict:
+async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
     """Async implementation of the compliance job task."""
     from src.db.session import get_db_session
     from src.db.models import ComplianceGap, Job, JobFile, JobStatus, Report, ReportFormat
@@ -136,8 +138,8 @@ async def _run_compliance_job_async(task, job_id: str) -> dict:
         if final_state.get("error"):
             await _mark_failed(
                 job_id,
-                final_state.get("error", "Unknown pipeline error"),
-                final_state.get("error_stage", "unknown"),
+                str(final_state.get("error", "Unknown pipeline error")),
+                str(final_state.get("error_stage", "unknown")),
                 task.request.retries,
             )
             return {"status": "failed"}
@@ -145,7 +147,7 @@ async def _run_compliance_job_async(task, job_id: str) -> dict:
         # Persist results
         report = final_state.get("final_report")
         if report:
-            await _persist_results(job_id, final_state, db_files)
+            await _persist_results(job_id, cast(dict[str, Any], final_state), list(db_files))
 
         logger.info("Compliance job %s completed successfully", job_id)
         return {"status": "complete", "job_id": job_id}
@@ -161,7 +163,7 @@ async def _run_compliance_job_async(task, job_id: str) -> dict:
         return {"status": "failed", "error": str(exc)}
 
 
-async def _persist_results(job_id: str, final_state: dict, db_files: list) -> None:
+async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: list[Any]) -> None:
     """Save compliance gaps, update job stats, and generate reports."""
     from src.db.session import get_db_session
     from src.db.models import ComplianceGap, GapSeverity, Job, JobStatus, Report, ReportFormat
@@ -209,19 +211,23 @@ async def _persist_results(job_id: str, final_state: dict, db_files: list) -> No
         # Create JSON report record
         import json
         from datetime import timedelta
+
         report_key = f"reports/{job_id}/report.json"
         from src.storage.base import get_storage
+
         storage = get_storage()
         report_json = json.dumps(report.model_dump(mode="json"), indent=2, default=str).encode()
         await storage.upload(report_json, report_key, "application/json")
 
-        db.add(Report(
-            job_id=job_id,
-            format=ReportFormat.JSON,
-            storage_key=report_key,
-            size_bytes=len(report_json),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
-        ))
+        db.add(
+            Report(
+                job_id=job_id,
+                format=ReportFormat.JSON,
+                storage_key=report_key,
+                size_bytes=len(report_json),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
 
         await db.commit()
 
@@ -229,9 +235,7 @@ async def _persist_results(job_id: str, final_state: dict, db_files: list) -> No
     await _deliver_webhook(job_id)
 
 
-async def _mark_failed(
-    job_id: str, error_message: str, error_stage: str, retry_count: int
-) -> None:
+async def _mark_failed(job_id: str, error_message: str, error_stage: str, retry_count: int) -> None:
     """Mark a job as failed in the database."""
     from src.db.session import get_db_session
     from src.db.models import Job, JobStatus
@@ -313,10 +317,11 @@ async def _deliver_webhook(job_id: str) -> None:
 
 # ── Maintenance tasks ─────────────────────────────────────────────────────────
 
+
 @celery_app.task(name="expire_old_jobs")
 def expire_old_jobs() -> int:
     """Delete jobs and associated data that have exceeded their TTL."""
-    return _run_async(_expire_old_jobs_async())
+    return cast(int, _run_async(_expire_old_jobs_async()))
 
 
 async def _expire_old_jobs_async() -> int:
@@ -326,9 +331,7 @@ async def _expire_old_jobs_async() -> int:
 
     now = datetime.now(timezone.utc)
     async with get_db_session() as db:
-        result = await db.execute(
-            select(Job.id).where(Job.expires_at < now)
-        )
+        result = await db.execute(select(Job.id).where(Job.expires_at < now))
         expired_ids = [row[0] for row in result.all()]
 
         if expired_ids:
@@ -342,7 +345,7 @@ async def _expire_old_jobs_async() -> int:
 @celery_app.task(name="deliver_pending_webhooks")
 def deliver_pending_webhooks() -> int:
     """Retry undelivered webhooks for completed jobs."""
-    return _run_async(_deliver_pending_webhooks_async())
+    return cast(int, _run_async(_deliver_pending_webhooks_async()))
 
 
 async def _deliver_pending_webhooks_async() -> int:
@@ -351,12 +354,14 @@ async def _deliver_pending_webhooks_async() -> int:
 
     async with get_db_session() as db:
         result = await db.execute(
-            select(Job.id).where(
+            select(Job.id)
+            .where(
                 Job.status == JobStatus.COMPLETE,
                 Job.webhook_url.isnot(None),
                 Job.webhook_delivered == False,
                 Job.webhook_attempts < 3,
-            ).limit(10)
+            )
+            .limit(10)
         )
         job_ids = [row[0] for row in result.all()]
 
@@ -366,7 +371,7 @@ async def _deliver_pending_webhooks_async() -> int:
     return len(job_ids)
 
 
-def start():
+def start() -> None:
     """Entry point for `meridian-worker` CLI command."""
     celery_app.worker_main(
         argv=[

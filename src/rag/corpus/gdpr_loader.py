@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 
 # ── Base types ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class CorpusDocument:
     """A single source document to be ingested."""
+
     filename: str
     content: str
     source_url: str | None = None
@@ -26,6 +28,7 @@ class CorpusDocument:
 @dataclass
 class ChunkMetadata:
     """Article-level metadata for a text chunk."""
+
     article: str | None = None
     article_title: str | None = None
     section_path: list[str] = field(default_factory=list)
@@ -55,7 +58,7 @@ class BaseCorpusLoader(ABC):
         """
         return ChunkMetadata()
 
-    def corpus_info(self) -> dict[str, str]:
+    def corpus_info(self) -> dict[str, str | None]:
         """Return corpus metadata dict for database insertion."""
         return {
             "slug": self.CORPUS_ID,
@@ -91,10 +94,7 @@ class GDPRLoader(BaseCorpusLoader):
     SOURCE_URL = "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
 
     LOCAL_CACHE = Path("data/corpus_sources/gdpr_en.txt")
-    EURLEX_URL = (
-        "https://eur-lex.europa.eu/legal-content/EN/TXT/TEXT/"
-        "?uri=CELEX%3A32016R0679"
-    )
+    EURLEX_URL = "https://eur-lex.europa.eu/legal-content/EN/TXT/TEXT/?uri=CELEX%3A32016R0679"
 
     def load_documents(self) -> list[CorpusDocument]:
         """Load GDPR text, preferring local cache over network fetch."""
@@ -118,6 +118,7 @@ class GDPRLoader(BaseCorpusLoader):
         try:
             import httpx
             from src.config import settings
+
             response = httpx.get(
                 self.EURLEX_URL,
                 headers={"User-Agent": settings.EDGAR_USER_AGENT},
@@ -129,11 +130,13 @@ class GDPRLoader(BaseCorpusLoader):
                 from html.parser import HTMLParser
 
                 class _TextExtractor(HTMLParser):
-                    def __init__(self):
+                    def __init__(self) -> None:
                         super().__init__()
                         self._text: list[str] = []
-                    def handle_data(self, data: str):
+
+                    def handle_data(self, data: str) -> None:
                         self._text.append(data)
+
                     def get_text(self) -> str:
                         return " ".join(self._text)
 
@@ -158,12 +161,14 @@ class GDPRLoader(BaseCorpusLoader):
             if re.match(r"Article\s+\d+[a-z]?\b", part, re.IGNORECASE):
                 if current_article and current_lines:
                     content = f"{current_article}\n\n" + "\n".join(current_lines)
-                    documents.append(CorpusDocument(
-                        filename=f"gdpr_{current_article.lower().replace(' ', '_')}.txt",
-                        content=content.strip(),
-                        source_url=self.SOURCE_URL,
-                        metadata={"article": current_article, "regulation": "gdpr"},
-                    ))
+                    documents.append(
+                        CorpusDocument(
+                            filename=f"gdpr_{current_article.lower().replace(' ', '_')}.txt",
+                            content=content.strip(),
+                            source_url=self.SOURCE_URL,
+                            metadata={"article": current_article, "regulation": "gdpr"},
+                        )
+                    )
                 current_article = part.strip()
                 current_lines = []
             else:
@@ -172,12 +177,14 @@ class GDPRLoader(BaseCorpusLoader):
         # Flush last article
         if current_article and current_lines:
             content = f"{current_article}\n\n" + "\n".join(current_lines)
-            documents.append(CorpusDocument(
-                filename=f"gdpr_{current_article.lower().replace(' ', '_')}.txt",
-                content=content.strip(),
-                source_url=self.SOURCE_URL,
-                metadata={"article": current_article, "regulation": "gdpr"},
-            ))
+            documents.append(
+                CorpusDocument(
+                    filename=f"gdpr_{current_article.lower().replace(' ', '_')}.txt",
+                    content=content.strip(),
+                    source_url=self.SOURCE_URL,
+                    metadata={"article": current_article, "regulation": "gdpr"},
+                )
+            )
 
         logger.info("Parsed %d GDPR article documents", len(documents))
         return documents if documents else self._get_sample_documents()

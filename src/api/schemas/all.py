@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 # ── Shared types ──────────────────────────────────────────────────────────────
 
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
@@ -37,6 +38,7 @@ class SubmitOptions(BaseModel):
 
 class SubmitRequest(BaseModel):
     """Parsed from multipart form fields (files handled separately)."""
+
     regulation_scope: list[str] = Field(..., min_length=1)
     webhook_url: str | None = None
     webhook_secret: str | None = None
@@ -79,6 +81,7 @@ class SubmitResponse(BaseModel):
 
 # ── Status ────────────────────────────────────────────────────────────────────
 
+
 class JobSummary(BaseModel):
     total_gaps: int
     by_severity: dict[str, int]
@@ -110,6 +113,7 @@ class JobStatusResponse(BaseModel):
 
 
 # ── Report ────────────────────────────────────────────────────────────────────
+
 
 class ComplianceScoreDetail(BaseModel):
     score: float
@@ -175,6 +179,7 @@ class ReportResponse(BaseModel):
 
 # ── Corpus status ─────────────────────────────────────────────────────────────
 
+
 class CorpusInfo(BaseModel):
     id: str
     name: str
@@ -194,6 +199,7 @@ class CorpusStatusResponse(BaseModel):
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
+
 
 class DependencyStatus(BaseModel):
     database: Literal["healthy", "unhealthy"]

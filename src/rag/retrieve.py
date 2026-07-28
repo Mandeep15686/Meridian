@@ -31,6 +31,7 @@ _reranker = CrossEncoderReranker()
 
 # ── Query embedding ───────────────────────────────────────────────────────────
 
+
 async def embed_query(query: str) -> list[float]:
     """Embed a query string using the configured embedding model."""
     from openai import AsyncOpenAI as _OAI
@@ -44,6 +45,7 @@ async def embed_query(query: str) -> list[float]:
 
 
 # ── Stage 1: Dense retrieval ──────────────────────────────────────────────────
+
 
 async def dense_retrieve(
     session: AsyncSession,
@@ -104,6 +106,7 @@ async def dense_retrieve(
 
 # ── Stage 2: BM25 keyword retrieval ──────────────────────────────────────────
 
+
 async def bm25_retrieve(
     session: AsyncSession,
     query: str,
@@ -152,6 +155,7 @@ async def bm25_retrieve(
 
 # ── Stage 3: Reciprocal Rank Fusion ──────────────────────────────────────────
 
+
 def reciprocal_rank_fusion(
     dense_results: list[dict[str, Any]],
     bm25_results: list[dict[str, Any]],
@@ -188,6 +192,7 @@ def reciprocal_rank_fusion(
 
 
 # ── Full retrieval pipeline ───────────────────────────────────────────────────
+
 
 async def hybrid_retrieve(
     session: AsyncSession,
@@ -273,6 +278,7 @@ async def _get_cached_results(key: str) -> list[RetrievedChunk] | None:
         return None
     try:
         import redis.asyncio as aioredis
+
         r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         raw = await r.get(key)
         if raw:
@@ -289,6 +295,7 @@ async def _set_cached_results(key: str, results: list[RetrievedChunk]) -> None:
     try:
         import redis.asyncio as aioredis
         from dataclasses import asdict
+
         r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         serialised = json.dumps([vars(r_) for r_ in results])
         await r.setex(key, settings.RETRIEVAL_CACHE_TTL, serialised)

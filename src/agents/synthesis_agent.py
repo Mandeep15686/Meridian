@@ -26,6 +26,7 @@ _claude = ClaudeClient()
 
 # ── Context formatters ────────────────────────────────────────────────────────
 
+
 def _format_regulatory_context(chunks: list[RetrievedChunk]) -> str:
     """Format retrieved chunks as numbered context blocks for the LLM."""
     if not chunks:
@@ -68,8 +69,7 @@ def _format_policy_content(extractions: list[AgentExtraction]) -> str:
             parts.append("VQA findings:\n" + "\n".join(vqa_lines))
         if ext.tapas_answers:
             tapas_lines = [
-                f"  Q: {r['question']} → A: {r['answer']}"
-                for r in ext.tapas_answers[:6]
+                f"  Q: {r['question']} → A: {r['answer']}" for r in ext.tapas_answers[:6]
             ]
             parts.append("Table QA findings:\n" + "\n".join(tapas_lines))
         if ext.table_summary:
@@ -99,6 +99,7 @@ def _format_ner_summary(entities: list[Entity]) -> str:
 
 # ── Synthesis node ────────────────────────────────────────────────────────────
 
+
 async def synthesis_node(state: MeridianState) -> dict:
     """
     LangGraph node: generate candidate compliance gaps via Claude Sonnet.
@@ -110,15 +111,18 @@ async def synthesis_node(state: MeridianState) -> dict:
     t_start = time.monotonic()
     job_id = state.get("job_id", "unknown")
     regulation_scope = state.get("regulation_scope", [])
-    extractions: list[AgentExtraction] = state.get("raw_extractions", [])
-    retrieved_chunks: list[RetrievedChunk] = state.get("retrieved_chunks", [])
-    ner_entities: list[Entity] = state.get("ner_entities", [])
-    failed_gap_ids: list[str] = state.get("failed_gap_ids", [])
+    extractions: list[AgentExtraction] = state.get("raw_extractions") or []
+    retrieved_chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
+    ner_entities: list[Entity] = state.get("ner_entities") or []
+    failed_gap_ids: list[str] = state.get("failed_gap_ids") or []
     synthesis_retries: int = state.get("synthesis_retries", 0)
 
     logger.info(
         "[synthesis] job=%s retries=%d extractions=%d chunks=%d",
-        job_id, synthesis_retries, len(extractions), len(retrieved_chunks),
+        job_id,
+        synthesis_retries,
+        len(extractions),
+        len(retrieved_chunks),
     )
 
     if not extractions and not retrieved_chunks:
@@ -154,7 +158,9 @@ async def synthesis_node(state: MeridianState) -> dict:
                 CandidateGap(
                     gap_id=raw_gap.get("gap_id") or f"gap_{uuid4().hex[:6]}",
                     severity=raw_gap.get("severity", "minor"),
-                    framework=raw_gap.get("framework", regulation_scope[0] if regulation_scope else "unknown"),
+                    framework=raw_gap.get(
+                        "framework", regulation_scope[0] if regulation_scope else "unknown"
+                    ),
                     regulatory_article=raw_gap.get("regulatory_article", "Unknown Article"),
                     regulatory_requirement=raw_gap.get("regulatory_requirement", ""),
                     regulatory_quote=raw_gap.get("regulatory_quote", ""),
@@ -173,7 +179,9 @@ async def synthesis_node(state: MeridianState) -> dict:
     duration_ms = int((time.monotonic() - t_start) * 1000)
     logger.info(
         "[synthesis] job=%s produced %d candidate gaps in %dms",
-        job_id, len(candidate_gaps), duration_ms,
+        job_id,
+        len(candidate_gaps),
+        duration_ms,
     )
 
     return {
@@ -189,6 +197,7 @@ async def synthesis_node(state: MeridianState) -> dict:
 
 # ── Report node ───────────────────────────────────────────────────────────────
 
+
 async def report_node(state: MeridianState) -> dict:
     """
     LangGraph node: assemble the final ComplianceReport from verified gaps.
@@ -201,7 +210,8 @@ async def report_node(state: MeridianState) -> dict:
 
     logger.info(
         "[report] job=%s assembling report for %d verified gaps",
-        job_id, len(verified_gaps),
+        job_id,
+        len(verified_gaps),
     )
 
     # Compute summary statistics
@@ -260,7 +270,10 @@ async def report_node(state: MeridianState) -> dict:
     duration_ms = int((time.monotonic() - t_start) * 1000)
     logger.info(
         "[report] job=%s report assembled: %d gaps, pass_rate=%.1f%%, %dms",
-        job_id, total_gaps, groundedness_pass_rate * 100, duration_ms,
+        job_id,
+        total_gaps,
+        groundedness_pass_rate * 100,
+        duration_ms,
     )
 
     return {

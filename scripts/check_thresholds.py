@@ -43,7 +43,9 @@ def _load_from_mlflow(run_id: str | None = None) -> dict[str, float]:
         # Get the latest run from the eval experiment
         experiment = client.get_experiment_by_name(settings.MLFLOW_EXPERIMENT_NAME)
         if not experiment:
-            console.print(f"[yellow]MLflow experiment '{settings.MLFLOW_EXPERIMENT_NAME}' not found[/yellow]")
+            console.print(
+                f"[yellow]MLflow experiment '{settings.MLFLOW_EXPERIMENT_NAME}' not found[/yellow]"
+            )
             return {}
 
         runs = client.search_runs(
@@ -77,15 +79,20 @@ def _load_from_file(metrics_file: Path) -> dict[str, float]:
 @app.command()
 def main(
     run_id: str | None = typer.Option(
-        None, "--run-id", "-r",
+        None,
+        "--run-id",
+        "-r",
         help="Specific MLflow run ID to check. If not set, uses the latest run.",
     ),
     metrics_file: Path | None = typer.Option(
-        None, "--metrics-file", "-f",
+        None,
+        "--metrics-file",
+        "-f",
         help="JSON file with metrics dict (alternative to MLflow).",
     ),
     strict: bool = typer.Option(
-        True, "--strict/--no-strict",
+        True,
+        "--strict/--no-strict",
         help="Exit 1 if any threshold fails (default). Use --no-strict to warn only.",
     ),
 ) -> None:
@@ -118,9 +125,7 @@ def main(
 
     if not result.passed:
         if strict:
-            console.print(
-                "\n[red]Threshold check FAILED — blocking CI pipeline[/red]"
-            )
+            console.print("\n[red]Threshold check FAILED — blocking CI pipeline[/red]")
             raise SystemExit(1)
         else:
             console.print(

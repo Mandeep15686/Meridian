@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "meridian"
 
     # ── Required credentials ──────────────────────────────────────────────────
+    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
     ANTHROPIC_API_KEY: str = Field(..., description="Anthropic Claude API key")
     HF_API_TOKEN: str = Field(..., description="HuggingFace Inference API token")
     DATABASE_URL: str = Field(..., description="PostgreSQL connection string")
@@ -68,6 +69,7 @@ class Settings(BaseSettings):
     MAX_FILES_PER_JOB: int = Field(default=10, ge=1, le=50)
     CELERY_CONCURRENCY: int = Field(default=4, ge=1, le=32)
     CELERY_TASK_TIMEOUT: int = Field(default=900, ge=60)
+    RATE_LIMIT_SUBMIT: int = Field(default=20, ge=1, le=1000)
     WEBHOOK_RETRY_DELAYS: str = "30,90,270"
     WEBHOOK_SECRET: str | None = None
 
@@ -154,7 +156,7 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Return cached settings instance. Call once at startup."""
-    return Settings()
+    return Settings()  # type: ignore[call-arg]
 
 
 # Module-level convenience alias

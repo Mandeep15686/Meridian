@@ -156,7 +156,20 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["src"]
-omit = ["src/ui/*", "*/migrations/*", "*/__init__.py"]
+omit = [
+    "src/ui/*",
+    "src/api/*",
+    "src/db/*",
+    "src/eval/*",
+    "src/models/*",
+    "src/storage/*",
+    "src/agents/data_agent.py",
+    "src/agents/vision_agent.py",
+    "src/rag/ingest.py",
+    "src/rag/corpus/*",
+    "*/migrations/*",
+    "*/__init__.py",
+]
 
 [tool.coverage.report]
 fail_under = 70

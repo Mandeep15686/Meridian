@@ -51,10 +51,10 @@ async def _run_diagnostic(
     console.print(f"Top-k: {top_k}\n")
 
     async with get_db_session() as db:
-
         # ── Stage 1: Embed query ──────────────────────────────────────────────
         console.print("[bold]Stage 1:[/bold] Embedding query...")
         from src.config import settings
+
         query_embedding = await embed_query(query)
         console.print(f"  Embedding dimensions: {len(query_embedding)}")
         console.print(f"  Model: {settings.EMBEDDING_MODEL}")
@@ -153,9 +153,7 @@ async def _run_diagnostic(
             f"— query may not match corpus content well[/yellow]"
         )
     else:
-        console.print(
-            f"\n[green]✓ Top chunk score: {reranked[0].rerank_score:.4f}[/green]"
-        )
+        console.print(f"\n[green]✓ Top chunk score: {reranked[0].rerank_score:.4f}[/green]")
 
 
 @app.command()
@@ -167,7 +165,8 @@ def main(
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to return"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show per-stage results"),
     job_id: str | None = typer.Option(
-        None, "--job-id",
+        None,
+        "--job-id",
         help="If set, also shows which chunks were retrieved for that specific job",
     ),
 ) -> None:

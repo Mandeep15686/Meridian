@@ -2,31 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from src.rag.corpus.gdpr_loader import GDPRLoader
-
-if TYPE_CHECKING:
-    from src.rag.corpus.gdpr_loader import BaseCorpusLoader
+from src.rag.corpus.gdpr_loader import BaseCorpusLoader
+from src.rag.corpus.gdpr_loader import CorpusDocument
 
 
 # Minimal stubs for corpora without full loaders yet.
 # Replace with real implementations following the GDPRLoader pattern.
 
-class _StubLoader(GDPRLoader):
+
+class _StubLoader(BaseCorpusLoader):
     """Placeholder for corpora not yet fully implemented."""
 
-    def load_documents(self):
-        from src.rag.corpus.gdpr_loader import CorpusDocument
-        return [CorpusDocument(
-            filename=f"{self.CORPUS_ID}_stub.txt",
-            content=(
-                f"{self.CORPUS_NAME}\n\n"
-                f"This corpus is not yet fully loaded. "
-                f"Download the source document and implement a loader following "
-                f"GDPRLoader as the reference pattern."
-            ),
-        )]
+    def load_documents(self) -> list[CorpusDocument]:
+        return [
+            CorpusDocument(
+                filename=f"{self.CORPUS_ID}_stub.txt",
+                content=(
+                    f"{self.CORPUS_NAME}\n\n"
+                    f"This corpus is not yet fully loaded. "
+                    f"Download the source document and implement a loader following "
+                    f"GDPRLoader as the reference pattern."
+                ),
+            )
+        ]
 
 
 class SOC2Loader(_StubLoader):
@@ -79,25 +78,22 @@ class EUAIActLoader(_StubLoader):
 
 # ── Registry ──────────────────────────────────────────────────────────────────
 
-CORPUS_LOADERS: dict[str, type] = {
-    "gdpr":      GDPRLoader,
-    "soc2":      SOC2Loader,
-    "iso27001":  ISO27001Loader,
-    "sec_sp":    SECSPLoader,
-    "sec_sid":   SECSIDLoader,
-    "cfpb":      CFPBLoader,
+CORPUS_LOADERS: dict[str, type[BaseCorpusLoader]] = {
+    "gdpr": GDPRLoader,
+    "soc2": SOC2Loader,
+    "iso27001": ISO27001Loader,
+    "sec_sp": SECSPLoader,
+    "sec_sid": SECSIDLoader,
+    "cfpb": CFPBLoader,
     "eu_ai_act": EUAIActLoader,
 }
 
 
-def get_loader(corpus_id: str) -> "BaseCorpusLoader":
+def get_loader(corpus_id: str) -> BaseCorpusLoader:
     """Return an instantiated loader for a corpus slug."""
     cls = CORPUS_LOADERS.get(corpus_id)
     if cls is None:
-        raise ValueError(
-            f"Unknown corpus: '{corpus_id}'. "
-            f"Available: {list(CORPUS_LOADERS.keys())}"
-        )
+        raise ValueError(f"Unknown corpus: '{corpus_id}'. Available: {list(CORPUS_LOADERS.keys())}")
     return cls()
 
 

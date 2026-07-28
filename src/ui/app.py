@@ -6,6 +6,7 @@ import json
 import os
 import time
 from pathlib import Path
+from typing import cast
 
 import httpx
 import streamlit as st
@@ -27,6 +28,7 @@ st.set_page_config(
 
 # ── API client ────────────────────────────────────────────────────────────────
 
+
 def api_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {API_KEY}"}
 
@@ -35,16 +37,17 @@ def api_get(path: str) -> dict:
     with httpx.Client(base_url=API_BASE, timeout=30.0) as client:
         resp = client.get(path, headers=api_headers())
         resp.raise_for_status()
-        return resp.json()
+        return cast(dict, resp.json())
 
 
 def api_submit(files: list, regulation_scope: list[str], webhook_url: str | None) -> dict:
     with httpx.Client(base_url=API_BASE, timeout=60.0) as client:
-        multipart_files = [("files", (f.name, f.read(), f.type or "application/octet-stream"))
-                          for f in files]
-        form_data = [("regulation_scope", s) for s in regulation_scope]
+        multipart_files = [
+            ("files", (f.name, f.read(), f.type or "application/octet-stream")) for f in files
+        ]
+        form_data: dict[str, str] = {"regulation_scope": ",".join(regulation_scope)}
         if webhook_url:
-            form_data.append(("webhook_url", webhook_url))
+            form_data["webhook_url"] = webhook_url
         resp = client.post(
             "/v1/submit",
             headers={"Authorization": f"Bearer {API_KEY}"},
@@ -52,10 +55,11 @@ def api_submit(files: list, regulation_scope: list[str], webhook_url: str | None
             data=form_data,
         )
         resp.raise_for_status()
-        return resp.json()
+        return cast(dict, resp.json())
 
 
 # ── Page: Submit ──────────────────────────────────────────────────────────────
+
 
 def page_submit() -> None:
     st.header("Submit compliance review")
@@ -68,8 +72,20 @@ def page_submit() -> None:
         uploaded_files = st.file_uploader(
             "Upload files",
             accept_multiple_files=True,
-            type=["pdf", "docx", "txt", "mp3", "wav", "m4a",
-                  "png", "jpg", "jpeg", "webp", "csv", "xlsx"],
+            type=[
+                "pdf",
+                "docx",
+                "txt",
+                "mp3",
+                "wav",
+                "m4a",
+                "png",
+                "jpg",
+                "jpeg",
+                "webp",
+                "csv",
+                "xlsx",
+            ],
         )
 
         regulation_scope = st.multiselect(
@@ -114,8 +130,7 @@ def page_submit() -> None:
     st.divider()
     st.subheader("Demo scenario")
     st.markdown(
-        "Load a sample privacy policy and run it against the GDPR corpus "
-        "to see Meridian in action."
+        "Load a sample privacy policy and run it against the GDPR corpus to see Meridian in action."
     )
     if st.button("Run demo (Meta-style privacy policy vs GDPR)"):
         sample_path = Path("data/sample_docs/sample_privacy_policy.pdf")
@@ -126,7 +141,9 @@ def page_submit() -> None:
             class _FakeFile:
                 name = "sample_privacy_policy.pdf"
                 type = "application/pdf"
-                def read(self): return sample_bytes
+
+                def read(self) -> bytes:
+                    return sample_bytes
 
             try:
                 result = api_submit([_FakeFile()], ["gdpr"], None)
@@ -142,6 +159,7 @@ def page_submit() -> None:
 
 
 # ── Page: Status ──────────────────────────────────────────────────────────────
+
 
 def page_status() -> None:
     st.header("Job status")
@@ -176,18 +194,30 @@ def page_status() -> None:
     # Status indicator
     job_status = status["status"]
     status_colors = {
-        "queued": "🟡", "processing": "🔵", "complete": "🟢",
-        "failed": "🔴", "cancelled": "⚫",
+        "queued": "🟡",
+        "processing": "🔵",
+        "complete": "🟢",
+        "failed": "🔴",
+        "cancelled": "⚫",
     }
     icon = status_colors.get(job_status, "⚪")
     st.subheader(f"{icon} Status: **{job_status.upper()}**")
 
     # Metadata
     cols = st.columns(4)
-    cols[0].metric("Submitted", status.get("submitted_at", "—")[:19] if status.get("submitted_at") else "—")
-    cols[1].metric("Started", status.get("started_at", "—")[:19] if status.get("started_at") else "—")
-    cols[2].metric("Completed", status.get("completed_at", "—")[:19] if status.get("completed_at") else "—")
-    cols[3].metric("Duration", f"{status.get('duration_seconds', 0)}s" if status.get("duration_seconds") else "—")
+    cols[0].metric(
+        "Submitted", status.get("submitted_at", "—")[:19] if status.get("submitted_at") else "—"
+    )
+    cols[1].metric(
+        "Started", status.get("started_at", "—")[:19] if status.get("started_at") else "—"
+    )
+    cols[2].metric(
+        "Completed", status.get("completed_at", "—")[:19] if status.get("completed_at") else "—"
+    )
+    cols[3].metric(
+        "Duration",
+        f"{status.get('duration_seconds', 0)}s" if status.get("duration_seconds") else "—",
+    )
 
     if job_status == "processing":
         current_stage = status.get("current_stage", "unknown")
@@ -233,6 +263,7 @@ def page_status() -> None:
 
 
 # ── Page: Report ──────────────────────────────────────────────────────────────
+
 
 def page_report() -> None:
     st.header("Compliance report")
@@ -342,15 +373,19 @@ def page_report() -> None:
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.image("https://via.placeholder.com/200x60?text=Meridian", width=200)
         st.caption(f"API: `{API_BASE}`")
 
-        page = st.radio(
+        page = cast(
+            str,
+            st.radio(
             "Navigation",
             options=["Submit", "Status", "Report"],
             index=0,
+            ),
         )
 
         st.divider()
@@ -366,6 +401,7 @@ def render_sidebar() -> str:
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     # Check API key

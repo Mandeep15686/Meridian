@@ -26,6 +26,7 @@ async def _check_database() -> tuple[bool, str]:
     try:
         from src.db.session import engine
         from sqlalchemy import text
+
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT version()"))
             version = result.scalar()
@@ -45,6 +46,7 @@ async def _check_redis() -> tuple[bool, str]:
     try:
         import redis.asyncio as aioredis
         from src.config import settings
+
         r = aioredis.from_url(settings.REDIS_URL)
         await r.ping()
         info = await r.info("server")
@@ -59,14 +61,19 @@ async def _check_hf_api() -> tuple[bool, str]:
     try:
         import httpx
         from src.config import settings
+
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
-                "https://api-inference.huggingface.co/models/dslim/bert-base-NER",
+                "https://huggingface.co/api/whoami-v2",
                 headers={"Authorization": f"Bearer {settings.HF_API_TOKEN}"},
             )
-        if resp.status_code in (200, 503):  # 503 = model loading (still reachable)
-            return True, f"HF API reachable (status {resp.status_code})"
-        return False, f"Unexpected status: {resp.status_code}"
+
+        if resp.status_code == 200:
+            user = resp.json().get("name", "unknown")
+            return True, f"Authenticated as {user}"
+
+        return False, f"HTTP {resp.status_code}"
+
     except Exception as exc:
         return False, f"Request failed: {exc}"
 
@@ -74,6 +81,7 @@ async def _check_hf_api() -> tuple[bool, str]:
 async def _check_anthropic_api() -> tuple[bool, str]:
     try:
         from src.config import settings
+
         key = settings.ANTHROPIC_API_KEY
         if not key.startswith("sk-ant"):
             return False, "ANTHROPIC_API_KEY does not look valid (should start with sk-ant)"
@@ -115,6 +123,7 @@ def _check_system_deps() -> list[tuple[str, bool, str]]:
     # libmagic
     try:
         import magic
+
         magic.from_buffer(b"test", mime=True)
         results.append(("libmagic", True, "python-magic OK"))
     except Exception as exc:
@@ -123,6 +132,7 @@ def _check_system_deps() -> list[tuple[str, bool, str]]:
     # ffmpeg
     try:
         import subprocess
+
         proc = subprocess.run(["ffprobe", "-version"], capture_output=True, timeout=5)
         if proc.returncode == 0:
             version_line = proc.stdout.decode().split("\n")[0]
@@ -135,6 +145,7 @@ def _check_system_deps() -> list[tuple[str, bool, str]]:
     # poppler (pdf2image)
     try:
         import subprocess
+
         proc = subprocess.run(["pdftoppm", "-v"], capture_output=True, timeout=5)
         results.append(("poppler-utils", True, "pdftoppm available"))
     except Exception:
@@ -143,6 +154,7 @@ def _check_system_deps() -> list[tuple[str, bool, str]]:
     # sentence-transformers (local similarity model)
     try:
         from sentence_transformers import SentenceTransformer
+
         results.append(("sentence-transformers", True, "Library installed"))
     except ImportError as exc:
         results.append(("sentence-transformers", False, str(exc)))
@@ -185,7 +197,10 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
     # Configuration check
     try:
         from src.config import settings
-        results.append(("Configuration (Pydantic)", True, f"v{settings.VERSION}, env={settings.ENVIRONMENT}"))
+
+        results.append(
+            ("Configuration (Pydantic)", True, f"v{settings.VERSION}, env={settings.ENVIRONMENT}")
+        )
     except Exception as exc:
         results.append(("Configuration (Pydantic)", False, f"Validation failed: {exc}"))
 

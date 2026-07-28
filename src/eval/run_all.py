@@ -60,6 +60,7 @@ async def run_all_evals(
     if ragas_dataset.exists():
         try:
             from src.eval.run_ragas import run_ragas_eval
+
             ragas_metrics = await run_ragas_eval(
                 dataset_path=ragas_dataset,
                 regulation_scope=["gdpr"],
@@ -81,17 +82,20 @@ async def run_all_evals(
     if gap_dataset.exists():
         try:
             from src.eval.run_gap_detection import run_gap_detection_eval
+
             gap_summary = await run_gap_detection_eval(
                 dataset_path=gap_dataset,
                 confidence_threshold=0.5,
                 output_mlflow=output_mlflow,
                 verbose=verbose,
             )
-            all_metrics.update({
-                "gap_f1": gap_summary.f1,
-                "gap_precision": gap_summary.precision,
-                "gap_recall": gap_summary.recall,
-            })
+            all_metrics.update(
+                {
+                    "gap_f1": gap_summary.f1,
+                    "gap_precision": gap_summary.precision,
+                    "gap_recall": gap_summary.recall,
+                }
+            )
             console.print("[green]✓ Gap detection evaluation complete[/green]")
         except Exception as exc:
             logger.exception("Gap detection evaluation failed: %s", exc)
@@ -106,16 +110,19 @@ async def run_all_evals(
     if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
         try:
             from src.eval.run_agent_judge import run_agent_judge
+
             judge_summary = await run_agent_judge(
                 lookback_hours=lookback_hours,
                 output_mlflow=output_mlflow,
                 verbose=verbose,
             )
-            all_metrics.update({
-                "agent_routing_accuracy": judge_summary.routing_accuracy,
-                "tool_use_quality_avg": judge_summary.tool_use_quality,
-                "citation_accuracy_avg": judge_summary.citation_accuracy,
-            })
+            all_metrics.update(
+                {
+                    "agent_routing_accuracy": judge_summary.routing_accuracy,
+                    "tool_use_quality_avg": judge_summary.tool_use_quality,
+                    "citation_accuracy_avg": judge_summary.citation_accuracy,
+                }
+            )
             console.print("[green]✓ Agent judge evaluation complete[/green]")
         except Exception as exc:
             logger.exception("Agent judge evaluation failed: %s", exc)
@@ -194,7 +201,8 @@ def main(
         help="Path to gap detection dataset",
     ),
     lookback_hours: int = typer.Option(
-        26, "--lookback-hours",
+        26,
+        "--lookback-hours",
         help="Hours to look back for LangSmith traces (agent judge)",
     ),
     output_mlflow: bool = typer.Option(False, "--output-mlflow", help="Log to MLflow"),

@@ -35,6 +35,7 @@ class Base(DeclarativeBase):
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
+
 class JobStatus(str, enum.Enum):
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -79,10 +80,13 @@ class EvalType(str, enum.Enum):
 
 # ── Tables ────────────────────────────────────────────────────────────────────
 
+
 class Corpus(Base):
     __tablename__ = "corpora"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     jurisdiction: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -90,8 +94,12 @@ class Corpus(Base):
     source_url: Mapped[str | None] = mapped_column(Text)
     document_count: Mapped[int] = mapped_column(Integer, default=0)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
-    ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    last_refreshed: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_refreshed: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     documents: Mapped[list[Document]] = relationship("Document", back_populates="corpus")
@@ -101,15 +109,21 @@ class Corpus(Base):
 class Document(Base):
     __tablename__ = "documents"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
-    corpus_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("corpora.id", ondelete="CASCADE"))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
+    corpus_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("corpora.id", ondelete="CASCADE")
+    )
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     source_url: Mapped[str | None] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     page_count: Mapped[int | None] = mapped_column(Integer)
     token_count: Mapped[int | None] = mapped_column(Integer)
     language: Mapped[str] = mapped_column(String(8), default="en")
-    ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     storage_key: Mapped[str | None] = mapped_column(Text)
 
     corpus: Mapped[Corpus] = relationship("Corpus", back_populates="documents")
@@ -121,8 +135,12 @@ class Document(Base):
 class Chunk(Base):
     __tablename__ = "chunks"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
-    document_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE"))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
+    document_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE")
+    )
     corpus_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("corpora.id"))
     regulation: Mapped[str] = mapped_column(String(64), nullable=False)
     article: Mapped[str | None] = mapped_column(String(128))
@@ -142,8 +160,13 @@ class Chunk(Base):
 
     __table_args__ = (
         UniqueConstraint("document_id", "chunk_index"),
-        Index("chunks_embedding_idx", "embedding", postgresql_using="ivfflat",
-              postgresql_with={"lists": 200}, postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index(
+            "chunks_embedding_idx",
+            "embedding",
+            postgresql_using="ivfflat",
+            postgresql_with={"lists": 200},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
         Index("chunks_ts_vector_idx", "ts_vector", postgresql_using="gin"),
         Index("chunks_corpus_regulation_idx", "corpus_id", "regulation"),
     )
@@ -161,7 +184,9 @@ class Job(Base):
     language: Mapped[str] = mapped_column(String(8), default="en")
     options: Mapped[dict] = mapped_column(JSONB, default=dict)
 
-    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -189,7 +214,9 @@ class Job(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     files: Mapped[list[JobFile]] = relationship("JobFile", back_populates="job")
-    extractions: Mapped[list[AgentExtraction]] = relationship("AgentExtraction", back_populates="job")
+    extractions: Mapped[list[AgentExtraction]] = relationship(
+        "AgentExtraction", back_populates="job"
+    )
     gaps: Mapped[list[ComplianceGap]] = relationship("ComplianceGap", back_populates="job")
     reports: Mapped[list[Report]] = relationship("Report", back_populates="job")
 
@@ -202,7 +229,9 @@ class Job(Base):
 class JobFile(Base):
     __tablename__ = "job_files"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     modality: Mapped[FileModality] = mapped_column(
@@ -217,7 +246,9 @@ class JobFile(Base):
     processed: Mapped[bool] = mapped_column(Boolean, default=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     processing_error: Mapped[str | None] = mapped_column(Text)
-    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     job: Mapped[Job] = relationship("Job", back_populates="files")
 
@@ -227,7 +258,9 @@ class JobFile(Base):
 class AgentExtraction(Base):
     __tablename__ = "agent_extractions"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
     file_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("job_files.id"))
     agent: Mapped[AgentType] = mapped_column(Enum(AgentType, name="agent_type"))
@@ -257,15 +290,21 @@ class AgentExtraction(Base):
 class ComplianceGap(Base):
     __tablename__ = "compliance_gaps"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
     severity: Mapped[GapSeverity] = mapped_column(Enum(GapSeverity, name="gap_severity"))
     framework: Mapped[str] = mapped_column(String(64), nullable=False)
     regulatory_article: Mapped[str] = mapped_column(String(256), nullable=False)
-    regulatory_chunk_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("chunks.id"))
+    regulatory_chunk_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("chunks.id")
+    )
     regulatory_requirement: Mapped[str] = mapped_column(Text, nullable=False)
     regulatory_quote: Mapped[str] = mapped_column(Text, nullable=False)
-    policy_file_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("job_files.id"))
+    policy_file_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("job_files.id")
+    )
     policy_reference: Mapped[str | None] = mapped_column(Text)
     policy_text: Mapped[str | None] = mapped_column(Text)
     gap_description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -289,12 +328,16 @@ class ComplianceGap(Base):
 class Report(Base):
     __tablename__ = "reports"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
     format: Mapped[ReportFormat] = mapped_column(Enum(ReportFormat, name="report_format"))
     storage_key: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int | None] = mapped_column(BigInteger)
-    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     job: Mapped[Job] = relationship("Job", back_populates="reports")
@@ -305,7 +348,9 @@ class Report(Base):
 class EvalRun(Base):
     __tablename__ = "eval_runs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
+    )
     eval_type: Mapped[EvalType] = mapped_column(Enum(EvalType, name="eval_type"))
     triggered_by: Mapped[str] = mapped_column(String(32), default="scheduled")
     pipeline_version: Mapped[str] = mapped_column(String(32), nullable=False)

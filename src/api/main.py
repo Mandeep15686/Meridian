@@ -6,6 +6,7 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from typing import Any, cast
 
 import structlog
 from fastapi import FastAPI, Request, Response
@@ -32,20 +33,23 @@ logger = logging.getLogger(__name__)
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     """Run startup and shutdown logic."""
     logger.info("Starting Meridian API v%s (%s)", settings.VERSION, settings.ENVIRONMENT)
 
     # Initialise Sentry if configured
     if settings.SENTRY_DSN:
         import sentry_sdk
+
         sentry_sdk.init(dsn=settings.SENTRY_DSN, environment=settings.ENVIRONMENT)
         logger.info("Sentry error tracking enabled")
 
     # Warm up the local similarity model (used by hallucination gate)
     try:
         from src.models.retrieval import SimilarityModel
+
         _ = SimilarityModel()._get_model()
         logger.info("SimilarityModel warm-up complete")
     except Exception as exc:
@@ -58,6 +62,7 @@ async def lifespan(app: FastAPI):
 
 # ── Application factory ───────────────────────────────────────────────────────
 
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Meridian API",
@@ -69,11 +74,7 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    origins = (
-        settings.ALLOWED_ORIGINS.split(",")
-        if settings.ALLOWED_ORIGINS != "*"
-        else ["*"]
-    )
+    origins = settings.ALLOWED_ORIGINS.split(",") if settings.ALLOWED_ORIGINS != "*" else ["*"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -84,10 +85,10 @@ def create_app() -> FastAPI:
 
     # ── Request ID middleware ─────────────────────────────────────────────────
     @app.middleware("http")
-    async def add_request_id(request: Request, call_next):
+    async def add_request_id(request: Request, call_next: Any) -> Response:
         request_id = request.headers.get("X-Request-Id") or str(uuid.uuid4())
         start = time.perf_counter()
-        response: Response = await call_next(request)
+        response = cast(Response, await call_next(request))
         duration_ms = int((time.perf_counter() - start) * 1000)
 
         response.headers["X-Request-Id"] = request_id
@@ -95,17 +96,21 @@ def create_app() -> FastAPI:
 
         logger.info(
             "HTTP %s %s %d %dms req_id=%s",
-            request.method, request.url.path,
-            response.status_code, duration_ms, request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            request_id,
         )
-        return response
+        return cast(Response, response)
 
     # ── Rate limiting (simple Redis sliding window) ───────────────────────────
     @app.middleware("http")
-    async def rate_limit(request: Request, call_next):
+    async def rate_limit(request: Request, call_next: Any) -> Response:
         # Only rate-limit authenticated routes
         if not request.url.path.startswith("/v1/submit"):
-            return await call_next(request)
+            response = cast(Response, await call_next(request))
+            return response
 
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
@@ -113,6 +118,7 @@ def create_app() -> FastAPI:
             try:
                 import redis.asyncio as aioredis
                 from datetime import datetime
+
                 r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
                 minute_key = f"ratelimit:{api_key_prefix}:{int(time.time() // 60)}"
                 count = await r.incr(minute_key)
@@ -120,7 +126,9 @@ def create_app() -> FastAPI:
                 if count > settings.RATE_LIMIT_SUBMIT:
                     return JSONResponse(
                         status_code=429,
-                        content={"error": {"code": "rate_limited", "message": "Rate limit exceeded"}},
+                        content={
+                            "error": {"code": "rate_limited", "message": "Rate limit exceeded"}
+                        },
                         headers={
                             "X-RateLimit-Limit": str(settings.RATE_LIMIT_SUBMIT),
                             "X-RateLimit-Remaining": "0",
@@ -130,16 +138,17 @@ def create_app() -> FastAPI:
             except Exception:
                 pass  # Don't fail requests on Redis error
 
-        return await call_next(request)
+        response = cast(Response, await call_next(request))
+        return response
 
     # ── Global exception handler ──────────────────────────────────────────────
     @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
+    async def global_exception_handler(request: Request, exc: Exception) -> Response:
         logger.exception("Unhandled exception: %s", exc)
-        return JSONResponse(
+        return cast(Response, JSONResponse(
             status_code=500,
             content={"error": {"code": "internal_error", "message": "An internal error occurred"}},
-        )
+        ))
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(router_submit)

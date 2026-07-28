@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import shutil
 from abc import ABC, abstractmethod
+from typing import Any, cast
 from pathlib import Path
 from functools import lru_cache
 
@@ -13,7 +14,16 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _as_bytes(value: Any) -> bytes:
+    return cast(bytes, value)
+
+
+def _as_bool(value: Any) -> bool:
+    return cast(bool, value)
+
+
 # ── Abstract base ─────────────────────────────────────────────────────────────
+
 
 class StorageBackend(ABC):
     """Abstract interface for file storage operations."""
@@ -50,6 +60,7 @@ class StorageBackend(ABC):
 
 
 # ── Local filesystem backend ──────────────────────────────────────────────────
+
 
 class LocalStorageBackend(StorageBackend):
     """
@@ -103,6 +114,7 @@ class LocalStorageBackend(StorageBackend):
 
 # ── GCP Cloud Storage backend ─────────────────────────────────────────────────
 
+
 class GCSStorageBackend(StorageBackend):
     """
     GCP Cloud Storage backend for production deployments.
@@ -114,13 +126,14 @@ class GCSStorageBackend(StorageBackend):
 
     def __init__(self) -> None:
         from google.cloud import storage as gcs
+
         self._client = gcs.Client()
         self._uploads_bucket = self._client.bucket(settings.GCS_UPLOADS_BUCKET)
         self._reports_bucket = self._client.bucket(settings.GCS_REPORTS_BUCKET)
 
-    def _bucket_and_key(self, key: str):
+    def _bucket_and_key(self, key: str) -> tuple[Any, str]:
         if key.startswith("reports/"):
-            return self._reports_bucket, key[len("reports/"):]
+            return self._reports_bucket, key[len("reports/") :]
         return self._uploads_bucket, key
 
     async def upload(
@@ -134,7 +147,7 @@ class GCSStorageBackend(StorageBackend):
         bucket, blob_name = self._bucket_and_key(key)
         blob = bucket.blob(blob_name)
 
-        def _sync_upload():
+        def _sync_upload() -> None:
             blob.upload_from_string(data, content_type=content_type)
 
         await asyncio.get_event_loop().run_in_executor(None, _sync_upload)
@@ -147,10 +160,10 @@ class GCSStorageBackend(StorageBackend):
         bucket, blob_name = self._bucket_and_key(key)
         blob = bucket.blob(blob_name)
 
-        def _sync_download():
-            return blob.download_as_bytes()
+        def _sync_download() -> bytes:
+            return cast(bytes, blob.download_as_bytes())
 
-        data = await asyncio.get_event_loop().run_in_executor(None, _sync_download)
+        data: bytes = _as_bytes(await asyncio.to_thread(_sync_download))
         return data
 
     async def delete(self, key: str) -> None:
@@ -159,7 +172,7 @@ class GCSStorageBackend(StorageBackend):
         bucket, blob_name = self._bucket_and_key(key)
         blob = bucket.blob(blob_name)
 
-        def _sync_delete():
+        def _sync_delete() -> None:
             blob.delete()
 
         await asyncio.get_event_loop().run_in_executor(None, _sync_delete)
@@ -170,10 +183,11 @@ class GCSStorageBackend(StorageBackend):
         bucket, blob_name = self._bucket_and_key(key)
         blob = bucket.blob(blob_name)
 
-        def _sync_exists():
-            return blob.exists()
+        def _sync_exists() -> bool:
+            return cast(bool, blob.exists())
 
-        return await asyncio.get_event_loop().run_in_executor(None, _sync_exists)
+        exists: bool = _as_bool(await asyncio.to_thread(_sync_exists))
+        return exists
 
     def public_url(self, key: str) -> str | None:
         bucket, blob_name = self._bucket_and_key(key)
@@ -181,6 +195,7 @@ class GCSStorageBackend(StorageBackend):
 
 
 # ── Factory ───────────────────────────────────────────────────────────────────
+
 
 @lru_cache(maxsize=1)
 def get_storage() -> StorageBackend:

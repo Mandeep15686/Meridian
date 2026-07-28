@@ -7,9 +7,11 @@ from dataclasses import dataclass
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class EvalThresholds:
     """Minimum acceptable metric values enforced by the nightly CI job."""
+
     ragas_faithfulness: float = 0.85
     ragas_answer_relevancy: float = 0.82
     ragas_context_precision: float = 0.80

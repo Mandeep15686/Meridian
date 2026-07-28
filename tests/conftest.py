@@ -43,6 +43,7 @@ TABLES_DIR = FIXTURES_DIR / "tables"
 
 # ── Event loop ────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Provide a shared event loop for the test session."""
@@ -52,6 +53,7 @@ def event_loop():
 
 
 # ── Sample data factories ─────────────────────────────────────────────────────
+
 
 def make_uploaded_file(
     filename: str = "test_policy.pdf",
@@ -81,7 +83,8 @@ def make_retrieved_chunk(
         chunk_id=chunk_id,
         regulation=regulation,
         article=article,
-        content=content or (
+        content=content
+        or (
             f"{regulation.upper()} {article}: "
             "The period for which the personal data will be stored, or if that is not "
             "possible, the criteria used to determine that period."
@@ -175,11 +178,13 @@ def make_state(
     """Build a MeridianState dict for testing."""
     return {
         "job_id": job_id,
-        "input_files": input_files or [make_uploaded_file()],
+        "input_files": (input_files if input_files is not None else [make_uploaded_file()]),
         "regulation_scope": regulation_scope or ["gdpr"],
         "options": {},
         "raw_extractions": raw_extractions or [],
-        "retrieved_chunks": retrieved_chunks or [make_retrieved_chunk()],
+        "retrieved_chunks": (
+            retrieved_chunks if retrieved_chunks is not None else [make_retrieved_chunk()]
+        ),
         "ner_entities": [],
         "candidate_gaps": candidate_gaps or [],
         "verified_gaps": verified_gaps or [],
@@ -325,9 +330,11 @@ def sample_csv_path(tmp_path: Path) -> Path:
 
 # ── Mock HF model factories ───────────────────────────────────────────────────
 
+
 def mock_ner_model(entities: list[dict] | None = None):
     """Build a mock NERModel that returns preset entities."""
     from src.models.nlp import NEREntity
+
     default_entities = entities or [
         NEREntity(entity_group="MISC", word="5 years", start=20, end=27, score=0.92),
         NEREntity(entity_group="ORG", word="Acme Corp", start=0, end=9, score=0.99),
@@ -340,6 +347,7 @@ def mock_ner_model(entities: list[dict] | None = None):
 def mock_qa_model(answer: str = "5 years", score: float = 0.88):
     """Build a mock QAModel that returns a preset answer."""
     from src.models.nlp import QAAnswer
+
     mock = AsyncMock()
     mock.answer.return_value = QAAnswer(answer=answer, score=score, start=20, end=27)
     return mock
@@ -383,6 +391,7 @@ def mock_storage(file_bytes: bytes = b"test content"):
 
 
 # ── Database fixtures ─────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_db_session():

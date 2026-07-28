@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 
 
 class TestSubmitRequest:
-
     def test_valid_single_scope(self):
         req = SubmitRequest(regulation_scope=["gdpr"])
         assert req.regulation_scope == ["gdpr"]
@@ -98,7 +97,6 @@ class TestSubmitRequest:
 
 
 class TestGapResponse:
-
     def test_valid_critical_gap(self):
         gap = GapResponse(
             gap_id="gap_001",
@@ -154,7 +152,6 @@ class TestGapResponse:
 
 
 class TestJobStatusResponse:
-
     def test_queued_status(self):
         status = JobStatusResponse(
             job_id="01JTEST",

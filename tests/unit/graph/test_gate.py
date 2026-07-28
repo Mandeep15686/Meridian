@@ -13,6 +13,7 @@ from tests.conftest import make_candidate_gap, make_retrieved_chunk, make_state_
 
 # ── Helper to make a simple state for gate testing ────────────────────────────
 
+
 def _make_gate_state(
     gap_ids: list[str],
     groundedness_scores: dict[str, float],
@@ -32,7 +33,6 @@ def _make_gate_state(
 
 
 class TestHallucinationGate:
-
     def test_all_passing_gaps_produce_verified_gaps(self):
         """When all gaps score above threshold, they should all be verified."""
         state = _make_gate_state(
@@ -90,6 +90,7 @@ class TestHallucinationGate:
     def test_exact_threshold_value_fails(self):
         """A groundedness score exactly equal to the threshold should FAIL (exclusive >)."""
         from src.config import settings
+
         threshold = settings.GROUNDEDNESS_THRESHOLD  # default 0.80
 
         state = _make_gate_state(["gap_001"], {}, synthesis_retries=0)
@@ -125,10 +126,10 @@ class TestHallucinationGate:
     def test_gaps_sorted_by_severity_then_confidence(self):
         """Verified gaps should be sorted: critical > major > minor, then by confidence."""
         gaps = [
-            make_candidate_gap(gap_id="g1", severity="minor",    confidence=0.95),
-            make_candidate_gap(gap_id="g2", severity="critical",  confidence=0.80),
-            make_candidate_gap(gap_id="g3", severity="major",     confidence=0.90),
-            make_candidate_gap(gap_id="g4", severity="critical",  confidence=0.92),
+            make_candidate_gap(gap_id="g1", severity="minor", confidence=0.95),
+            make_candidate_gap(gap_id="g2", severity="critical", confidence=0.80),
+            make_candidate_gap(gap_id="g3", severity="major", confidence=0.90),
+            make_candidate_gap(gap_id="g4", severity="critical", confidence=0.92),
         ]
         state = {
             "job_id": "test",
@@ -144,10 +145,10 @@ class TestHallucinationGate:
             result = hallucination_gate_node(state)
 
         verified = result["verified_gaps"]
-        assert verified[0].gap_id == "g4"   # critical, confidence=0.92
-        assert verified[1].gap_id == "g2"   # critical, confidence=0.80
-        assert verified[2].gap_id == "g3"   # major
-        assert verified[3].gap_id == "g1"   # minor
+        assert verified[0].gap_id == "g4"  # critical, confidence=0.92
+        assert verified[1].gap_id == "g2"  # critical, confidence=0.80
+        assert verified[2].gap_id == "g3"  # major
+        assert verified[3].gap_id == "g1"  # minor
 
     def test_groundedness_scores_recorded_per_gap(self):
         """Gate should record groundedness scores keyed by gap_id."""
@@ -177,7 +178,6 @@ class TestHallucinationGate:
 
 
 class TestGateRouting:
-
     def test_routes_to_synthesize_when_failures_and_retries_available(self):
         """gate_routing should return 'synthesize' when failed_gap_ids and retries < max."""
         from src.config import settings

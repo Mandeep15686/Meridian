@@ -31,27 +31,37 @@ class TestDocAgent:
 
         storage_mock = mock_storage(SAMPLE_POLICY_TEXT.encode())
         ner_entities = [
-            NEREntity(entity_group="MISC", word="as long as necessary",
-                      start=100, end=120, score=0.82),
+            NEREntity(
+                entity_group="MISC", word="as long as necessary", start=100, end=120, score=0.82
+            ),
         ]
         retrieval_chunks = [make_retrieved_chunk()]
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock,
-                  return_value=ner_entities),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value="RETENTION_PERIOD"),
-            patch("src.agents.doc_agent._qa.answer",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=retrieval_chunks),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=ner_entities,
+            ),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value="RETENTION_PERIOD",
+            ),
+            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=retrieval_chunks,
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
 
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         assert "raw_extractions" in result
@@ -76,6 +86,7 @@ class TestDocAgent:
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
         ):
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         assert result["raw_extractions"] == []
@@ -92,20 +103,25 @@ class TestDocAgent:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract",
-                  new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent._qa.answer",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=expected_chunks),
+            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=expected_chunks,
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
 
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         assert "retrieved_chunks" in result
@@ -123,6 +139,7 @@ class TestDocAgent:
 
         with patch("src.agents.doc_agent.get_storage", return_value=storage_mock):
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         assert result.get("error") is not None
@@ -143,20 +160,23 @@ class TestDocAgent:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract",
-                  new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent._qa.answer",
-                  new_callable=AsyncMock, return_value=qa_answer),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=[]),
+            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch(
+                "src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=qa_answer
+            ),
+            patch("src.agents.doc_agent.hybrid_retrieve", new_callable=AsyncMock, return_value=[]),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
 
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         assert result["raw_extractions"]
@@ -174,20 +194,21 @@ class TestDocAgent:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract",
-                  new_callable=AsyncMock, return_value=[]),
-            patch("src.agents.doc_agent._regulatory_classifier.classify_entity",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent._qa.answer",
-                  new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve",
-                  new_callable=AsyncMock, return_value=[]),
+            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._regulatory_classifier.classify_entity",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch("src.agents.doc_agent.hybrid_retrieve", new_callable=AsyncMock, return_value=[]),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
 
             from src.agents.doc_agent import doc_agent_node
+
             result = await doc_agent_node(state)
 
         if result["raw_extractions"]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +19,13 @@ from src.db.models import Chunk, Corpus, Document
 
 logger = logging.getLogger(__name__)
 
-_openai = AsyncOpenAI()
+@lru_cache(maxsize=1)
+def get_openai_client() -> AsyncOpenAI:
+    return AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 # ── Text extraction ───────────────────────────────────────────────────────────
+
 
 def extract_text_from_pdf(path: Path) -> tuple[str, int]:
     """Extract text from a PDF. Returns (text, page_count)."""
@@ -62,10 +66,11 @@ def extract_text(path: Path, mime_type: str = "") -> tuple[str, int]:
 
 # ── Semantic chunking ─────────────────────────────────────────────────────────
 
+
 def semantic_chunk(
     text: str,
-    target_size: int = None,
-    overlap: int = None,
+    target_size: int | None = None,
+    overlap: int | None = None,
 ) -> list[str]:
     """
     Split text into semantically coherent chunks.
@@ -111,7 +116,7 @@ def _sentence_chunk(text: str, target_size: int, overlap: int) -> list[str]:
         if current_len + sentence_len > target_size and current:
             chunks.append(" ".join(current))
             # Keep overlap sentences at start of next chunk
-            overlap_sentences = current[-(overlap // 20 or 1):]
+            overlap_sentences = current[-(overlap // 20 or 1) :]
             current = overlap_sentences + [sentence]
             current_len = sum(len(s) // chars_per_token for s in current)
         else:
@@ -126,6 +131,7 @@ def _sentence_chunk(text: str, target_size: int, overlap: int) -> list[str]:
 
 # ── Embedding ────────────────────────────────────────────────────────────────
 
+
 async def embed_texts(texts: list[str]) -> list[list[float]]:
     """Batch embed texts using the configured embedding model."""
     if not texts:
@@ -136,8 +142,8 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     all_embeddings: list[list[float]] = []
 
     for i in range(0, len(texts), batch_size):
-        batch = [t[:8191] for t in texts[i: i + batch_size]]
-        response = await _openai.embeddings.create(
+        batch = [t[:8191] for t in texts[i : i + batch_size]]
+        response = await get_openai_client().embeddings.create(
             model=settings.EMBEDDING_MODEL,
             input=batch,
         )
@@ -147,6 +153,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
 
 
 # ── Database upsert ───────────────────────────────────────────────────────────
+
 
 async def upsert_chunks(
     session: AsyncSession,
@@ -204,13 +211,14 @@ async def upsert_chunks(
                 "embedding": vec_str,
             },
         )
-        if result.rowcount:
+        if result.scalar_one_or_none() is not None:
             inserted += 1
 
     return inserted
 
 
 # ── Full ingestion pipeline ───────────────────────────────────────────────────
+
 
 async def ingest_document(
     session: AsyncSession,
@@ -310,10 +318,7 @@ async def ingest_document(
 
     await session.commit()
 
-    logger.info(
-        "Ingested %s: %d/%d chunks inserted",
-        source_path.name, inserted, len(chunks)
-    )
+    logger.info("Ingested %s: %d/%d chunks inserted", source_path.name, inserted, len(chunks))
     return {
         "document_id": doc.id,
         "chunks_inserted": inserted,

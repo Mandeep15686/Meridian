@@ -9,6 +9,7 @@ from src.rag.retrieve import reciprocal_rank_fusion
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 def make_dense_results(chunk_ids_and_scores: list[tuple[str, float]]) -> list[dict]:
     return [
         {
@@ -41,8 +42,8 @@ def make_bm25_results(chunk_ids_and_scores: list[tuple[str, float]]) -> list[dic
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
-class TestRRF:
 
+class TestRRF:
     def test_chunk_in_both_lists_ranked_first(self):
         """A chunk appearing at the top of both lists should rank #1 after RRF."""
         dense = make_dense_results([("A", 0.95), ("B", 0.90), ("C", 0.85)])
@@ -98,7 +99,9 @@ class TestRRF:
         fused = reciprocal_rank_fusion(dense, bm25)
         scores = [r["rrf_score"] for r in fused]
 
-        assert scores == sorted(scores, reverse=True), "Output should be sorted descending by RRF score"
+        assert scores == sorted(scores, reverse=True), (
+            "Output should be sorted descending by RRF score"
+        )
 
     def test_empty_dense_results(self):
         """RRF should handle empty dense results gracefully."""
@@ -148,7 +151,9 @@ class TestRRF:
         high_k_scores = {r["chunk_id"]: r["rrf_score"] for r in fused_high_k}
 
         # Scores should differ between k=1 and k=1000
-        assert low_k_scores != high_k_scores, "Different k values should produce different RRF scores"
+        assert low_k_scores != high_k_scores, (
+            "Different k values should produce different RRF scores"
+        )
 
     def test_rrf_metadata_preserved(self):
         """Original metadata fields (dense_score, bm25_score) should be preserved."""

@@ -21,7 +21,6 @@ def _make_audio_file(filename: str = "meeting.mp3") -> object:
 
 
 class TestAudioAgent:
-
     @pytest.mark.asyncio
     async def test_transcription_included_in_extraction(self):
         """Audio agent should include full transcript text in the extraction."""
@@ -37,10 +36,18 @@ class TestAudioAgent:
         mock_transcription = Transcription(
             full_text=SAMPLE_AUDIO_TRANSCRIPT,
             segments=[
-                ASRSegment(speaker="SPEAKER_00", start=0.0, end=8.4,
-                           text="We need to review our GDPR compliance."),
-                ASRSegment(speaker="SPEAKER_01", start=8.7, end=14.0,
-                           text="Article 13(2)(a) requires specific retention periods."),
+                ASRSegment(
+                    speaker="SPEAKER_00",
+                    start=0.0,
+                    end=8.4,
+                    text="We need to review our GDPR compliance.",
+                ),
+                ASRSegment(
+                    speaker="SPEAKER_01",
+                    start=8.7,
+                    end=14.0,
+                    text="Article 13(2)(a) requires specific retention periods.",
+                ),
             ],
             language="en",
             duration_seconds=62.0,
@@ -49,12 +56,19 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=mock_transcription),
-            patch("src.agents.audio_agent._summarizer.summarize",
-                  new_callable=AsyncMock, return_value="GDPR compliance review discussed."),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=mock_transcription,
+            ),
+            patch(
+                "src.agents.audio_agent._summarizer.summarize",
+                new_callable=AsyncMock,
+                return_value="GDPR compliance review discussed.",
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         assert "raw_extractions" in result
@@ -90,12 +104,19 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=mock_transcription),
-            patch("src.agents.audio_agent._summarizer.summarize",
-                  new_callable=AsyncMock, return_value="Summary."),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=mock_transcription,
+            ),
+            patch(
+                "src.agents.audio_agent._summarizer.summarize",
+                new_callable=AsyncMock,
+                return_value="Summary.",
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         extraction = result["raw_extractions"][0]
@@ -128,12 +149,19 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=mock_transcription),
-            patch("src.agents.audio_agent._summarizer.summarize",
-                  new_callable=AsyncMock, return_value="Summary."),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=mock_transcription,
+            ),
+            patch(
+                "src.agents.audio_agent._summarizer.summarize",
+                new_callable=AsyncMock,
+                return_value="Summary.",
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         extraction = result["raw_extractions"][0]
@@ -159,10 +187,14 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=empty_transcription),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=empty_transcription,
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         assert result["raw_extractions"] == []
@@ -179,6 +211,7 @@ class TestAudioAgent:
 
         with patch("src.agents.audio_agent.get_storage", return_value=storage_mock):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         assert result.get("error") is not None
@@ -209,12 +242,19 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=mock_transcription),
-            patch("src.agents.audio_agent._summarizer.summarize",
-                  new_callable=AsyncMock, return_value=expected_summary),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=mock_transcription,
+            ),
+            patch(
+                "src.agents.audio_agent._summarizer.summarize",
+                new_callable=AsyncMock,
+                return_value=expected_summary,
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         extraction = result["raw_extractions"][0]
@@ -239,12 +279,19 @@ class TestAudioAgent:
 
         with (
             patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
-            patch("src.agents.audio_agent._asr.transcribe",
-                  new_callable=AsyncMock, return_value=mock_transcription),
-            patch("src.agents.audio_agent._summarizer.summarize",
-                  new_callable=AsyncMock, return_value="Summary."),
+            patch(
+                "src.agents.audio_agent._asr.transcribe",
+                new_callable=AsyncMock,
+                return_value=mock_transcription,
+            ),
+            patch(
+                "src.agents.audio_agent._summarizer.summarize",
+                new_callable=AsyncMock,
+                return_value="Summary.",
+            ),
         ):
             from src.agents.audio_agent import audio_agent_node
+
             result = await audio_agent_node(state)
 
         if result.get("raw_extractions"):

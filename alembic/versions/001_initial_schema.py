@@ -78,8 +78,12 @@ def upgrade() -> None:
     op.create_table(
         "documents",
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
-        sa.Column("corpus_id", postgresql.UUID(as_uuid=False),
-                  sa.ForeignKey("corpora.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "corpus_id",
+            postgresql.UUID(as_uuid=False),
+            sa.ForeignKey("corpora.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("filename", sa.Text, nullable=False),
         sa.Column("source_url", sa.Text),
         sa.Column("content_hash", sa.String(64), nullable=False),
@@ -95,12 +99,21 @@ def upgrade() -> None:
     # ── chunks ────────────────────────────────────────────────────────────────
     op.create_table(
         "chunks",
-        sa.Column("id", postgresql.UUID(as_uuid=False),
-                  server_default=sa.text("gen_random_uuid()"), primary_key=True),
-        sa.Column("document_id", postgresql.UUID(as_uuid=False),
-                  sa.ForeignKey("documents.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("corpus_id", postgresql.UUID(as_uuid=False),
-                  sa.ForeignKey("corpora.id"), nullable=False),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=False),
+            server_default=sa.text("gen_random_uuid()"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "document_id",
+            postgresql.UUID(as_uuid=False),
+            sa.ForeignKey("documents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "corpus_id", postgresql.UUID(as_uuid=False), sa.ForeignKey("corpora.id"), nullable=False
+        ),
         sa.Column("regulation", sa.String(64), nullable=False),
         sa.Column("article", sa.String(128)),
         sa.Column("article_title", sa.Text),
@@ -117,7 +130,9 @@ def upgrade() -> None:
     )
 
     # Alter embedding column to vector type after table creation
-    op.execute("ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(1536) USING embedding::vector;")
+    op.execute(
+        "ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(1536) USING embedding::vector;"
+    )
 
     # IVFFlat index for approximate nearest neighbor search
     op.execute("""
@@ -147,9 +162,20 @@ def upgrade() -> None:
     op.create_table(
         "jobs",
         sa.Column("id", sa.String(26), primary_key=True),
-        sa.Column("status", postgresql.ENUM("queued","processing","complete","failed","cancelled",
-                                            name="job_status", create_type=False), nullable=False,
-                  server_default="queued"),
+        sa.Column(
+            "status",
+            postgresql.ENUM(
+                "queued",
+                "processing",
+                "complete",
+                "failed",
+                "cancelled",
+                name="job_status",
+                create_type=False,
+            ),
+            nullable=False,
+            server_default="queued",
+        ),
         sa.Column("regulation_scope", postgresql.ARRAY(sa.Text), nullable=False),
         sa.Column("report_formats", postgresql.ARRAY(sa.Text), server_default="{pdf,json}"),
         sa.Column("language", sa.String(8), nullable=False, server_default="en"),
@@ -184,9 +210,19 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
         sa.Column("job_id", sa.String(26), sa.ForeignKey("jobs.id", ondelete="CASCADE")),
         sa.Column("filename", sa.Text, nullable=False),
-        sa.Column("modality", postgresql.ENUM("document","audio","image","tabular","unknown",
-                                              name="file_modality", create_type=False),
-                  server_default="unknown"),
+        sa.Column(
+            "modality",
+            postgresql.ENUM(
+                "document",
+                "audio",
+                "image",
+                "tabular",
+                "unknown",
+                name="file_modality",
+                create_type=False,
+            ),
+            server_default="unknown",
+        ),
         sa.Column("mime_type", sa.String(128), nullable=False),
         sa.Column("size_bytes", sa.BigInteger, nullable=False),
         sa.Column("storage_key", sa.Text, nullable=False),
@@ -205,10 +241,18 @@ def upgrade() -> None:
         "agent_extractions",
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
         sa.Column("job_id", sa.String(26), sa.ForeignKey("jobs.id", ondelete="CASCADE")),
-        sa.Column("file_id", postgresql.UUID(as_uuid=False),
-                  sa.ForeignKey("job_files.id")),
-        sa.Column("agent", postgresql.ENUM("doc_agent","audio_agent","vision_agent","data_agent",
-                                           name="agent_type", create_type=False)),
+        sa.Column("file_id", postgresql.UUID(as_uuid=False), sa.ForeignKey("job_files.id")),
+        sa.Column(
+            "agent",
+            postgresql.ENUM(
+                "doc_agent",
+                "audio_agent",
+                "vision_agent",
+                "data_agent",
+                name="agent_type",
+                create_type=False,
+            ),
+        ),
         sa.Column("raw_text", sa.Text),
         sa.Column("ner_entities", postgresql.JSONB),
         sa.Column("qa_results", postgresql.JSONB),
@@ -234,12 +278,15 @@ def upgrade() -> None:
         "compliance_gaps",
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
         sa.Column("job_id", sa.String(26), sa.ForeignKey("jobs.id", ondelete="CASCADE")),
-        sa.Column("severity", postgresql.ENUM("critical","major","minor",
-                                              name="gap_severity", create_type=False)),
+        sa.Column(
+            "severity",
+            postgresql.ENUM("critical", "major", "minor", name="gap_severity", create_type=False),
+        ),
         sa.Column("framework", sa.String(64), nullable=False),
         sa.Column("regulatory_article", sa.String(256), nullable=False),
-        sa.Column("regulatory_chunk_id", postgresql.UUID(as_uuid=False),
-                  sa.ForeignKey("chunks.id")),
+        sa.Column(
+            "regulatory_chunk_id", postgresql.UUID(as_uuid=False), sa.ForeignKey("chunks.id")
+        ),
         sa.Column("regulatory_requirement", sa.Text, nullable=False),
         sa.Column("regulatory_quote", sa.Text, nullable=False),
         sa.Column("policy_file_id", postgresql.UUID(as_uuid=False), sa.ForeignKey("job_files.id")),
@@ -262,8 +309,10 @@ def upgrade() -> None:
         "reports",
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
         sa.Column("job_id", sa.String(26), sa.ForeignKey("jobs.id", ondelete="CASCADE")),
-        sa.Column("format", postgresql.ENUM("json","pdf","markdown",
-                                            name="report_format", create_type=False)),
+        sa.Column(
+            "format",
+            postgresql.ENUM("json", "pdf", "markdown", name="report_format", create_type=False),
+        ),
         sa.Column("storage_key", sa.Text, nullable=False),
         sa.Column("size_bytes", sa.BigInteger),
         sa.Column("generated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
@@ -275,8 +324,17 @@ def upgrade() -> None:
     op.create_table(
         "eval_runs",
         sa.Column("id", postgresql.UUID(as_uuid=False), primary_key=True),
-        sa.Column("eval_type", postgresql.ENUM("ragas","gap_detection_f1","agent_judge","latency",
-                                               name="eval_type", create_type=False)),
+        sa.Column(
+            "eval_type",
+            postgresql.ENUM(
+                "ragas",
+                "gap_detection_f1",
+                "agent_judge",
+                "latency",
+                name="eval_type",
+                create_type=False,
+            ),
+        ),
         sa.Column("triggered_by", sa.String(32), server_default="scheduled"),
         sa.Column("pipeline_version", sa.String(32), nullable=False),
         sa.Column("ragas_faithfulness", sa.Numeric(5, 4)),
@@ -314,7 +372,14 @@ def downgrade() -> None:
     op.drop_table("documents")
     op.drop_table("corpora")
 
-    for enum in ["job_status","file_modality","agent_type","gap_severity","report_format","eval_type"]:
+    for enum in [
+        "job_status",
+        "file_modality",
+        "agent_type",
+        "gap_severity",
+        "report_format",
+        "eval_type",
+    ]:
         op.execute(f"DROP TYPE IF EXISTS {enum};")
 
     op.execute("DROP FUNCTION IF EXISTS chunks_ts_vector_update CASCADE;")

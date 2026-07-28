@@ -11,9 +11,11 @@ from pydantic import BaseModel
 
 # ── Sub-types stored in state ─────────────────────────────────────────────────
 
+
 @dataclass
 class UploadedFile:
     """A file submitted as part of a job."""
+
     file_id: str
     filename: str
     modality: Literal["document", "audio", "image", "tabular", "unknown"]
@@ -28,7 +30,8 @@ class UploadedFile:
 @dataclass
 class Entity:
     """A named entity extracted from text by the NER model."""
-    type: str          # RETENTION_PERIOD, DPO_MENTION, LAWFUL_BASIS, etc.
+
+    type: str  # RETENTION_PERIOD, DPO_MENTION, LAWFUL_BASIS, etc.
     text: str
     start: int
     end: int
@@ -39,6 +42,7 @@ class Entity:
 @dataclass
 class QAResult:
     """An extractive QA answer from a policy document."""
+
     question: str
     answer: str
     score: float
@@ -50,6 +54,7 @@ class QAResult:
 @dataclass
 class TranscriptSegment:
     """A timestamped segment from audio transcription."""
+
     speaker: str
     start: float
     end: float
@@ -59,7 +64,8 @@ class TranscriptSegment:
 @dataclass
 class AgentExtraction:
     """Output from a specialist agent node for one file."""
-    agent: str                          # "doc_agent", "audio_agent", etc.
+
+    agent: str  # "doc_agent", "audio_agent", etc.
     file_id: str
     raw_text: str | None = None
     ner_entities: list[Entity] = field(default_factory=list)
@@ -79,6 +85,7 @@ class AgentExtraction:
 @dataclass
 class RetrievedChunk:
     """A regulatory chunk returned by the RAG pipeline."""
+
     chunk_id: str
     regulation: str
     article: str | None
@@ -93,6 +100,7 @@ class RetrievedChunk:
 
 class CandidateGap(BaseModel):
     """A compliance gap identified by the synthesis agent (pre-verification)."""
+
     gap_id: str
     severity: Literal["critical", "major", "minor"]
     framework: str
@@ -113,6 +121,7 @@ class CandidateGap(BaseModel):
 
 class VerifiedGap(BaseModel):
     """A compliance gap that has passed the hallucination gate."""
+
     gap_id: str
     severity: Literal["critical", "major", "minor"]
     framework: str
@@ -136,6 +145,7 @@ class VerifiedGap(BaseModel):
 
 class ComplianceReport(BaseModel):
     """Final synthesized compliance report."""
+
     job_id: str
     executive_summary: str
     gaps: list[VerifiedGap]
@@ -165,6 +175,7 @@ class MeridianState(TypedDict, total=False):
     # ── Job context ───────────────────────────────────────────────────────────
     job_id: str
     input_files: list[UploadedFile]
+    _current_file: UploadedFile
     regulation_scope: list[str]
     options: dict[str, Any]
 
@@ -177,8 +188,8 @@ class MeridianState(TypedDict, total=False):
 
     # ── Synthesis ─────────────────────────────────────────────────────────────
     candidate_gaps: list[CandidateGap]
-    groundedness_scores: dict[str, float]   # {gap_id: score}
-    failed_gap_ids: list[str]               # gaps that failed the gate
+    groundedness_scores: dict[str, float]  # {gap_id: score}
+    failed_gap_ids: list[str]  # gaps that failed the gate
     verified_gaps: list[VerifiedGap]
     synthesis_retries: int
 
