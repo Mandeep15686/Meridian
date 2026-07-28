@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+requires = [
+    "setuptools>=68",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "meridian"
@@ -52,7 +55,7 @@ dependencies = [
     "tokenizers==0.19.1",
 
     # Audio processing
-    "openai-whisper==20231117",
+    "openai-whisper>=20240930",
     "librosa==0.10.2",
     "webrtcvad==2.0.10",
     "pydub==0.25.1",
