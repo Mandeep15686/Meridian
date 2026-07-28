@@ -153,17 +153,13 @@ class CrossEncoderReranker(BaseHFModel):
                         "1",
                     ):
                         return float(entry.get("score", 0.0))
-                return max(
-                    float(e.get("score", 0.0)) for e in item if isinstance(e, dict)
-                )
+                return max(float(e.get("score", 0.0)) for e in item if isinstance(e, dict))
             if isinstance(item, dict):
                 return float(item.get("score", 0.0))
             return 0.0
 
         scored: list[RankedChunk] = []
-        for i, (candidate, score_item) in enumerate(
-            zip(candidates, raw_scores, strict=False)
-        ):
+        for i, (candidate, score_item) in enumerate(zip(candidates, raw_scores, strict=False)):
             scored.append(
                 RankedChunk(
                     chunk_id=candidate["chunk_id"],

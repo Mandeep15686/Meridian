@@ -87,9 +87,7 @@ class ClaudeClient:
 
     def __init__(self) -> None:
         self._client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self._async_client = anthropic.AsyncAnthropic(
-            api_key=settings.ANTHROPIC_API_KEY
-        )
+        self._async_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -168,9 +166,7 @@ class ClaudeClient:
                 return []
             return gaps
         except json.JSONDecodeError as exc:
-            logger.error(
-                "Failed to parse synthesis JSON: %s\nRaw: %s", exc, raw_text[:500]
-            )
+            logger.error("Failed to parse synthesis JSON: %s\nRaw: %s", exc, raw_text[:500])
             return []
 
     def _log_token_usage(self, usage: Any) -> None:
@@ -208,9 +204,7 @@ class ClaudeClient:
 
         frameworks = {g.get("framework", "unknown") for g in gaps}
         top_articles = [
-            g.get("regulatory_article", "")
-            for g in gaps
-            if g.get("severity") == "critical"
+            g.get("regulatory_article", "") for g in gaps if g.get("severity") == "critical"
         ][:3]
 
         prompt = (

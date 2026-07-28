@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 _similarity_model = SimilarityModel()
 
 
-def _find_chunk_content(
-    chunk_id: str | None, retrieved_chunks: list[RetrievedChunk]
-) -> str | None:
+def _find_chunk_content(chunk_id: str | None, retrieved_chunks: list[RetrievedChunk]) -> str | None:
     """Return the content of a chunk by ID, or None if not found."""
     if not chunk_id:
         return None
@@ -121,9 +119,7 @@ def hallucination_gate_node(state: MeridianState) -> dict:
 
     # Sort: critical first, then by confidence descending
     _severity_order = {"critical": 0, "major": 1, "minor": 2}
-    verified_gaps.sort(
-        key=lambda g: (_severity_order.get(g.severity, 3), -g.confidence)
-    )
+    verified_gaps.sort(key=lambda g: (_severity_order.get(g.severity, 3), -g.confidence))
 
     pass_rate = (
         sum(1 for g in verified_gaps if not g.is_uncertain) / len(verified_gaps)

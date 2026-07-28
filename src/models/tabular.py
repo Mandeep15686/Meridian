@@ -68,9 +68,7 @@ class TAPASModel(BaseHFModel):
         """
         # Truncate large tables to stay within TAPAS limits
         if len(df) > self.MAX_ROWS:
-            logger.warning(
-                "Table has %d rows; truncating to %d for TAPAS", len(df), self.MAX_ROWS
-            )
+            logger.warning("Table has %d rows; truncating to %d for TAPAS", len(df), self.MAX_ROWS)
             df = df.head(self.MAX_ROWS)
         if len(df.columns) > self.MAX_COLS:
             df = df.iloc[:, : self.MAX_COLS]
@@ -117,9 +115,7 @@ class TAPASModel(BaseHFModel):
             coordinates=[tuple(c) for c in coordinates],
         )
 
-    async def answer_batch(
-        self, df: pd.DataFrame, questions: list[str]
-    ) -> list[TAPASAnswer]:
+    async def answer_batch(self, df: pd.DataFrame, questions: list[str]) -> list[TAPASAnswer]:
         """Answer multiple questions about the same table."""
         answers: list[TAPASAnswer] = []
         for q in questions:
@@ -128,9 +124,7 @@ class TAPASModel(BaseHFModel):
                 answers.append(ans)
             except Exception as exc:
                 logger.warning("TAPAS failed for '%s': %s", q[:60], exc)
-                answers.append(
-                    TAPASAnswer(question=q, answer="", cells=[], aggregator="NONE")
-                )
+                answers.append(TAPASAnswer(question=q, answer="", cells=[], aggregator="NONE"))
         return answers
 
 
@@ -251,9 +245,7 @@ class TimeSeriesForecaster:
             upper = np.quantile(samples, 0.9, axis=0).tolist()
 
         except Exception as exc:
-            logger.warning(
-                "Chronos inference failed, using statistical fallback: %s", exc
-            )
+            logger.warning("Chronos inference failed, using statistical fallback: %s", exc)
             return self._statistical_fallback(time_series, timestamps)
 
         # Detect anomalies in historical data (where actual deviates from model expectation)

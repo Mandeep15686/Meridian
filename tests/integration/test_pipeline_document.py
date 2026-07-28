@@ -122,9 +122,7 @@ class TestDocumentOnlyPipeline:
                 regulation_scope=["gdpr"],
             )
 
-        assert (
-            final_state.get("error") is None
-        ), f"Pipeline error: {final_state.get('error')}"
+        assert final_state.get("error") is None, f"Pipeline error: {final_state.get('error')}"
         assert final_state.get("final_report") is not None
 
         report = final_state["final_report"]
@@ -203,10 +201,7 @@ class TestDocumentOnlyPipeline:
             )
 
         # Pipeline should not crash — it should return error state
-        assert (
-            final_state.get("error") is not None
-            or final_state.get("final_report") is not None
-        )
+        assert final_state.get("error") is not None or final_state.get("final_report") is not None
 
     @pytest.mark.asyncio
     async def test_pipeline_empty_document_produces_no_gaps(self):

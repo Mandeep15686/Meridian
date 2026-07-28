@@ -176,9 +176,7 @@ async def upsert_chunks(
     metadata = article_metadata or [{}] * len(chunks)
     inserted = 0
 
-    for i, (content, embedding, meta) in enumerate(
-        zip(chunks, embeddings, metadata, strict=True)
-    ):
+    for i, (content, embedding, meta) in enumerate(zip(chunks, embeddings, metadata, strict=True)):
         vec_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
         stmt = text(
@@ -260,9 +258,7 @@ async def ingest_document(
     existing_doc = existing.scalar_one_or_none()
 
     if existing_doc and not force_reingest:
-        logger.info(
-            "Document %s already ingested (hash match), skipping", source_path.name
-        )
+        logger.info("Document %s already ingested (hash match), skipping", source_path.name)
         return {
             "document_id": existing_doc.id,
             "chunks_inserted": 0,
@@ -326,9 +322,7 @@ async def ingest_document(
 
     await session.commit()
 
-    logger.info(
-        "Ingested %s: %d/%d chunks inserted", source_path.name, inserted, len(chunks)
-    )
+    logger.info("Ingested %s: %d/%d chunks inserted", source_path.name, inserted, len(chunks))
     return {
         "document_id": doc.id,
         "chunks_inserted": inserted,

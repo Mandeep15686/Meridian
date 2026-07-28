@@ -229,9 +229,7 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         if verbose or not ok:
             table.add_row(name, status, message)
         else:
-            table.add_row(
-                name, status, message[:80] + "..." if len(message) > 80 else message
-            )
+            table.add_row(name, status, message[:80] + "..." if len(message) > 80 else message)
 
     console.print(table)
 
@@ -240,9 +238,7 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         raise SystemExit(0)
     else:
         failed = [name for name, ok, _ in results if not ok]
-        console.print(
-            f"\n[red]{len(failed)} check(s) failed: {', '.join(failed)}[/red]"
-        )
+        console.print(f"\n[red]{len(failed)} check(s) failed: {', '.join(failed)}[/red]")
         console.print("See TROUBLESHOOTING.md for fix instructions.\n")
         raise SystemExit(1)
 

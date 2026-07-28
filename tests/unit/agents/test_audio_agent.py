@@ -84,9 +84,7 @@ class TestAudioAgent:
         assert extraction.agent == "audio_agent"
         assert extraction.raw_text is not None
         assert len(extraction.raw_text) > 0
-        assert (
-            "GDPR" in extraction.raw_text or "compliance" in extraction.raw_text.lower()
-        )
+        assert "GDPR" in extraction.raw_text or "compliance" in extraction.raw_text.lower()
 
     @pytest.mark.asyncio
     async def test_transcript_segments_in_extraction(self):
@@ -100,9 +98,7 @@ class TestAudioAgent:
 
         segments = [
             ASRSegment(speaker="SPEAKER_00", start=0.0, end=5.0, text="First segment."),
-            ASRSegment(
-                speaker="SPEAKER_01", start=5.5, end=10.0, text="Second segment."
-            ),
+            ASRSegment(speaker="SPEAKER_01", start=5.5, end=10.0, text="Second segment."),
         ]
         mock_transcription = Transcription(
             full_text="First segment. Second segment.",
@@ -113,9 +109,7 @@ class TestAudioAgent:
         )
 
         with (
-            patch(
-                "src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")
-            ),
+            patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
             patch(
                 "src.agents.audio_agent._asr.transcribe",
                 new_callable=AsyncMock,
@@ -148,9 +142,7 @@ class TestAudioAgent:
         state["_current_file"] = file
 
         segments = [
-            ASRSegment(
-                speaker="SPEAKER_00", start=0.0, end=5.0, text="Alice speaking."
-            ),
+            ASRSegment(speaker="SPEAKER_00", start=0.0, end=5.0, text="Alice speaking."),
             ASRSegment(speaker="SPEAKER_01", start=5.5, end=10.0, text="Bob speaking."),
             ASRSegment(speaker="SPEAKER_00", start=11.0, end=15.0, text="Alice again."),
         ]
@@ -163,9 +155,7 @@ class TestAudioAgent:
         )
 
         with (
-            patch(
-                "src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")
-            ),
+            patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
             patch(
                 "src.agents.audio_agent._asr.transcribe",
                 new_callable=AsyncMock,
@@ -203,9 +193,7 @@ class TestAudioAgent:
         )
 
         with (
-            patch(
-                "src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")
-            ),
+            patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
             patch(
                 "src.agents.audio_agent._asr.transcribe",
                 new_callable=AsyncMock,
@@ -253,9 +241,7 @@ class TestAudioAgent:
         )
         mock_transcription = Transcription(
             full_text=compliance_text,
-            segments=[
-                ASRSegment(speaker="S0", start=0.0, end=10.0, text=compliance_text)
-            ],
+            segments=[ASRSegment(speaker="S0", start=0.0, end=10.0, text=compliance_text)],
             language="en",
             duration_seconds=10.0,
             word_count=len(compliance_text.split()),
@@ -263,9 +249,7 @@ class TestAudioAgent:
         expected_summary = "GDPR data retention review discussed."
 
         with (
-            patch(
-                "src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")
-            ),
+            patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
             patch(
                 "src.agents.audio_agent._asr.transcribe",
                 new_callable=AsyncMock,
@@ -302,9 +286,7 @@ class TestAudioAgent:
         )
 
         with (
-            patch(
-                "src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")
-            ),
+            patch("src.agents.audio_agent.get_storage", return_value=mock_storage(b"fake")),
             patch(
                 "src.agents.audio_agent._asr.transcribe",
                 new_callable=AsyncMock,

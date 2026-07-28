@@ -146,9 +146,7 @@ class ASRModel:
             word_count=len(full_text.split()),
         )
 
-    def _split_on_silence(
-        self, wav_path: Path, total_duration: float
-    ) -> list[tuple[bytes, float]]:
+    def _split_on_silence(self, wav_path: Path, total_duration: float) -> list[tuple[bytes, float]]:
         """
         Split a WAV file at silence boundaries using webrtcvad.
 
@@ -176,9 +174,7 @@ class ASRModel:
             current_chunk: list[bytes] = []
             chunk_start = 0.0
             silence_frames = 0
-            silence_threshold = int(
-                1.0 * 1000 / frame_duration_ms
-            )  # 1 second of silence
+            silence_threshold = int(1.0 * 1000 / frame_duration_ms)  # 1 second of silence
 
             for i, frame in enumerate(frames):
                 if len(frame) < frame_size:
@@ -208,9 +204,7 @@ class ASRModel:
             return chunks if chunks else [(pcm_data, 0.0)]
 
         except ImportError:
-            logger.warning(
-                "webrtcvad not available — falling back to fixed-size chunks"
-            )
+            logger.warning("webrtcvad not available — falling back to fixed-size chunks")
             return self._fixed_size_chunks(wav_path)
 
     def _fixed_size_chunks(self, wav_path: Path) -> list[tuple[bytes, float]]:
@@ -232,9 +226,7 @@ class ASRModel:
 
         return chunks
 
-    @retry(
-        stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=8), reraise=True
-    )
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=8), reraise=True)
     async def _transcribe_chunk(self, pcm_bytes: bytes, language: str) -> str:
         """Send a single PCM chunk to the Whisper HF endpoint."""
         # Wrap raw PCM in a minimal WAV container
@@ -268,9 +260,7 @@ class ASRModel:
             )
 
         if response.status_code != 200:
-            logger.error(
-                "Whisper API error %d: %s", response.status_code, response.text[:200]
-            )
+            logger.error("Whisper API error %d: %s", response.status_code, response.text[:200])
             return ""
 
         data = response.json()

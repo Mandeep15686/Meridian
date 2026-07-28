@@ -78,9 +78,7 @@ class TestDocAgent:
 
         entities = extractions[0].ner_entities
         retention_entities = [e for e in entities if e.type == "RETENTION_PERIOD"]
-        assert (
-            len(retention_entities) >= 1
-        ), "Should find at least one RETENTION_PERIOD entity"
+        assert len(retention_entities) >= 1, "Should find at least one RETENTION_PERIOD entity"
 
     @pytest.mark.asyncio
     async def test_handles_empty_text_gracefully(self):
@@ -153,9 +151,7 @@ class TestDocAgent:
         state["_current_file"] = file
 
         storage_mock = AsyncMock()
-        storage_mock.download.side_effect = FileNotFoundError(
-            "File not found in storage"
-        )
+        storage_mock.download.side_effect = FileNotFoundError("File not found in storage")
 
         with patch("src.agents.doc_agent.get_storage", return_value=storage_mock):
             from src.agents.doc_agent import doc_agent_node

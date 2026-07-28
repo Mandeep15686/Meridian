@@ -129,6 +129,10 @@ meridian-ingest = "scripts.ingest_corpus:main"
 where = ["."]
 include = ["src*", "scripts*"]
 
+[tool.black]
+target-version = ["py311"]
+line-length = 100
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

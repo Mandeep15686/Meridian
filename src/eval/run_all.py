@@ -73,9 +73,7 @@ async def run_all_evals(
             eval_errors.append(f"RAGAS: {exc}")
             console.print(f"[red]✗ RAGAS evaluation failed: {exc}[/red]")
     else:
-        console.print(
-            f"[yellow]RAGAS dataset not found at {ragas_dataset} — skipping[/yellow]"
-        )
+        console.print(f"[yellow]RAGAS dataset not found at {ragas_dataset} — skipping[/yellow]")
 
     # ── 2. Gap detection F1 ───────────────────────────────────────────────────
     console.print(Rule("[bold cyan]Gap detection F1[/bold cyan]"))
@@ -103,9 +101,7 @@ async def run_all_evals(
             eval_errors.append(f"Gap detection: {exc}")
             console.print(f"[red]✗ Gap detection evaluation failed: {exc}[/red]")
     else:
-        console.print(
-            f"[yellow]Gap dataset not found at {gap_dataset} — skipping[/yellow]"
-        )
+        console.print(f"[yellow]Gap dataset not found at {gap_dataset} — skipping[/yellow]")
 
     # ── 3. Agent judge ────────────────────────────────────────────────────────
     console.print(Rule("[bold cyan]Agent judge[/bold cyan]"))
@@ -166,9 +162,7 @@ def _print_final_summary(metrics: dict[str, float], errors: list[str]) -> None:
     for metric_name, threshold in threshold_map.items():
         value = metrics.get(metric_name)
         if value is None:
-            table.add_row(
-                metric_name, "—", f"{threshold:.4f}", "[yellow]skipped[/yellow]"
-            )
+            table.add_row(metric_name, "—", f"{threshold:.4f}", "[yellow]skipped[/yellow]")
             continue
         passed = value >= threshold
         if not passed:

@@ -24,9 +24,7 @@ from src.models.retrieval import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
 
-_openai_client = AsyncOpenAI(
-    api_key=settings.ANTHROPIC_API_KEY
-)  # uses same key pattern
+_openai_client = AsyncOpenAI(api_key=settings.ANTHROPIC_API_KEY)  # uses same key pattern
 _reranker = CrossEncoderReranker()
 
 
@@ -35,9 +33,7 @@ _reranker = CrossEncoderReranker()
 
 async def embed_query(query: str) -> list[float]:
     """Embed a query string using the configured embedding model."""
-    client = (
-        AsyncOpenAI()
-    )  # reads OPENAI_API_KEY; set OPENAI_API_KEY = ANTHROPIC_API_KEY alias
+    client = AsyncOpenAI()  # reads OPENAI_API_KEY; set OPENAI_API_KEY = ANTHROPIC_API_KEY alias
     response = await client.embeddings.create(
         model=settings.EMBEDDING_MODEL,
         input=query[:8191],

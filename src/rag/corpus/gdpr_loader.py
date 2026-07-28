@@ -94,9 +94,7 @@ class GDPRLoader(BaseCorpusLoader):
     SOURCE_URL = "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
 
     LOCAL_CACHE = Path("data/corpus_sources/gdpr_en.txt")
-    EURLEX_URL = (
-        "https://eur-lex.europa.eu/legal-content/EN/TXT/TEXT/?uri=CELEX%3A32016R0679"
-    )
+    EURLEX_URL = "https://eur-lex.europa.eu/legal-content/EN/TXT/TEXT/?uri=CELEX%3A32016R0679"
 
     def load_documents(self) -> list[CorpusDocument]:
         """Load GDPR text, preferring local cache over network fetch."""

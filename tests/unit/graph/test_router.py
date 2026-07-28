@@ -7,9 +7,7 @@ from src.graph.state import UploadedFile
 from tests.conftest import make_state
 
 
-def _make_file(
-    filename: str, mime_type: str, modality: str = "unknown"
-) -> UploadedFile:
+def _make_file(filename: str, mime_type: str, modality: str = "unknown") -> UploadedFile:
     return UploadedFile(
         file_id=f"file-{filename}",
         filename=filename,

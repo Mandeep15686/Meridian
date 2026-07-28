@@ -40,13 +40,10 @@ def api_get(path: str) -> dict:
         return cast(dict, resp.json())
 
 
-def api_submit(
-    files: list, regulation_scope: list[str], webhook_url: str | None
-) -> dict:
+def api_submit(files: list, regulation_scope: list[str], webhook_url: str | None) -> dict:
     with httpx.Client(base_url=API_BASE, timeout=60.0) as client:
         multipart_files = [
-            ("files", (f.name, f.read(), f.type or "application/octet-stream"))
-            for f in files
+            ("files", (f.name, f.read(), f.type or "application/octet-stream")) for f in files
         ]
         form_data: dict[str, str] = {"regulation_scope": ",".join(regulation_scope)}
         if webhook_url:
@@ -169,9 +166,7 @@ def page_status() -> None:
 
     # Pre-fill from session state
     default_id = st.session_state.get("last_job_id", "")
-    job_id = st.text_input(
-        "Job ID", value=default_id, placeholder="01JXXXXXXXXXXXXXXXXXXXXXXX"
-    )
+    job_id = st.text_input("Job ID", value=default_id, placeholder="01JXXXXXXXXXXXXXXXXXXXXXXX")
 
     if not job_id:
         st.info("Enter a job ID to check status.")
@@ -224,11 +219,7 @@ def page_status() -> None:
     )
     cols[3].metric(
         "Duration",
-        (
-            f"{status.get('duration_seconds', 0)}s"
-            if status.get("duration_seconds")
-            else "—"
-        ),
+        (f"{status.get('duration_seconds', 0)}s" if status.get("duration_seconds") else "—"),
     )
 
     if job_status == "processing":
@@ -280,12 +271,8 @@ def page_status() -> None:
 def page_report() -> None:
     st.header("Compliance report")
 
-    default_id = st.session_state.get(
-        "view_report_job_id", st.session_state.get("last_job_id", "")
-    )
-    job_id = st.text_input(
-        "Job ID", value=default_id, placeholder="01JXXXXXXXXXXXXXXXXXXXXXXX"
-    )
+    default_id = st.session_state.get("view_report_job_id", st.session_state.get("last_job_id", ""))
+    job_id = st.text_input("Job ID", value=default_id, placeholder="01JXXXXXXXXXXXXXXXXXXXXXXX")
 
     if not job_id:
         st.info("Enter a job ID to view its report.")
@@ -366,9 +353,7 @@ def page_report() -> None:
 
             metric_cols = st.columns(3)
             metric_cols[0].metric("Confidence", f"{gap.get('confidence', 0):.0%}")
-            metric_cols[1].metric(
-                "Groundedness", f"{gap.get('groundedness_score', 0):.0%}"
-            )
+            metric_cols[1].metric("Groundedness", f"{gap.get('groundedness_score', 0):.0%}")
             metric_cols[2].metric("Severity", gap["severity"].upper())
 
     # Model metadata

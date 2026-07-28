@@ -63,9 +63,7 @@ class ImageCaptioner(BaseHFModel):
             return cast(str, raw.get("generated_text", "")).strip()
         return ""
 
-    async def caption(
-        self, image_source: Path | bytes, prompt: str | None = None
-    ) -> CaptionResult:
+    async def caption(self, image_source: Path | bytes, prompt: str | None = None) -> CaptionResult:
         """Generate a caption for an image."""
         if isinstance(image_source, Path):
             b64 = _image_to_base64(image_source)

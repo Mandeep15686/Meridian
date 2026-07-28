@@ -36,9 +36,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
     """Run startup and shutdown logic."""
-    logger.info(
-        "Starting Meridian API v%s (%s)", settings.VERSION, settings.ENVIRONMENT
-    )
+    logger.info("Starting Meridian API v%s (%s)", settings.VERSION, settings.ENVIRONMENT)
 
     # Initialise Sentry if configured
     if settings.SENTRY_DSN:
@@ -75,11 +73,7 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    origins = (
-        settings.ALLOWED_ORIGINS.split(",")
-        if settings.ALLOWED_ORIGINS != "*"
-        else ["*"]
-    )
+    origins = settings.ALLOWED_ORIGINS.split(",") if settings.ALLOWED_ORIGINS != "*" else ["*"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,

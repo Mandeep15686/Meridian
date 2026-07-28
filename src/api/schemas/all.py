@@ -50,9 +50,7 @@ class SubmitRequest(BaseModel):
     def validate_scope(cls, v: list[str]) -> list[str]:
         invalid = set(v) - VALID_SCOPES
         if invalid:
-            raise ValueError(
-                f"Unknown regulation scope(s): {invalid}. Valid: {VALID_SCOPES}"
-            )
+            raise ValueError(f"Unknown regulation scope(s): {invalid}. Valid: {VALID_SCOPES}")
         return v
 
     @field_validator("report_formats")

@@ -28,9 +28,7 @@ class Settings(BaseSettings):
     HF_API_TOKEN: str = Field(..., description="HuggingFace Inference API token")
     DATABASE_URL: str = Field(..., description="PostgreSQL connection string")
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
-    MERIDIAN_API_KEY: str = Field(
-        ..., min_length=32, description="Bearer token for API auth"
-    )
+    MERIDIAN_API_KEY: str = Field(..., min_length=32, description="Bearer token for API auth")
 
     # ── Vector store ─────────────────────────────────────────────────────────
     VECTOR_STORE: Literal["pgvector", "pinecone"] = "pgvector"

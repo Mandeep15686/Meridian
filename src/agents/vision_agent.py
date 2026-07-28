@@ -43,8 +43,7 @@ async def vision_agent_node(state: MeridianState) -> dict:
         # ── VQA ────────────────────────────────────────────────────────────────
         vqa_answers = await _vqa.ask_compliance_questions(image_bytes)
         vqa_dicts = [
-            {"question": a.question, "answer": a.answer, "score": a.score}
-            for a in vqa_answers
+            {"question": a.question, "answer": a.answer, "score": a.score} for a in vqa_answers
         ]
 
         # Build a summary from caption + high-confidence VQA answers
