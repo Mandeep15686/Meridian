@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -16,8 +17,6 @@ from src.config import settings
 from src.models.registry import MODELS
 
 logger = logging.getLogger(__name__)
-
-import os
 
 HF_INFERENCE_BASE = (
     os.getenv(
@@ -144,8 +143,9 @@ class ASRModel:
         Returns list of (pcm_bytes, start_time_seconds).
         """
         try:
-            import webrtcvad
             import wave
+
+            import webrtcvad
 
             vad = webrtcvad.Vad(mode=2)  # aggressiveness 0–3
             frame_duration_ms = 30
@@ -181,12 +181,11 @@ class ASRModel:
                     if (
                         silence_frames >= silence_threshold
                         or chunk_time - chunk_start >= self.CHUNK_DURATION_S
-                    ):
-                        if current_chunk:
-                            chunks.append((b"".join(current_chunk), chunk_start))
-                            chunk_start = chunk_time
-                            current_chunk = []
-                            silence_frames = 0
+                    ) and current_chunk:
+                        chunks.append((b"".join(current_chunk), chunk_start))
+                        chunk_start = chunk_time
+                        current_chunk = []
+                        silence_frames = 0
 
             # Flush remaining
             if current_chunk:
@@ -206,8 +205,6 @@ class ASRModel:
         chunks: list[tuple[bytes, float]] = []
 
         with wave.open(str(wav_path), "rb") as wf:
-            frame_size = 2  # 16-bit PCM
-            chunk_bytes_size = frame_count * frame_size
             idx = 0
             while True:
                 frames = wf.readframes(frame_count)
@@ -223,7 +220,6 @@ class ASRModel:
     async def _transcribe_chunk(self, pcm_bytes: bytes, language: str) -> str:
         """Send a single PCM chunk to the Whisper HF endpoint."""
         # Wrap raw PCM in a minimal WAV container
-        import io
         import wave
 
         wav_buf = io.BytesIO()

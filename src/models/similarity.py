@@ -4,6 +4,6 @@
 # The actual implementation lives in retrieval.py alongside the cross-encoder reranker
 # since both are retrieval-quality models loaded in-process.
 
-from src.models.retrieval import SimilarityModel, CrossEncoderReranker
+from src.models.retrieval import CrossEncoderReranker, SimilarityModel
 
 __all__ = ["SimilarityModel", "CrossEncoderReranker"]

@@ -231,7 +231,6 @@ class TimeSeriesForecaster:
             pipeline = self._get_pipeline()
             context = torch.tensor(time_series[-512:], dtype=torch.float32).unsqueeze(0)
 
-            quantile_levels = [0.1, 0.5, 0.9]
             forecast_tensor = pipeline.predict(
                 context=context,
                 prediction_length=self.HORIZON,
