@@ -280,7 +280,7 @@ async def get_job_status(
 # ── GET /v1/report/{job_id} ───────────────────────────────────────────────────
 
 
-@router_report.get("/report/{job_id}")
+@router_report.get("/report/{job_id}", response_model=ReportResponse)
 async def get_report(
     job_id: str,
     format: str = "json",

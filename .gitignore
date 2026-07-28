@@ -100,7 +100,7 @@ checkpoints.db          # LangGraph SQLite checkpointer (dev only)
 *.onnx
 *.bin
 *.safetensors
-models/
+/models/
 model_cache/
 .cache/huggingface/
 huggingface/
