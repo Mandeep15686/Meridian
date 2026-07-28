@@ -50,7 +50,7 @@ soundfile==0.12.1
 # ── Vision / image ────────────────────────────────────────────────────────────
 Pillow==10.3.0
 pdf2image==1.17.0
-python-magic-bin==0.4.14
+python-magic==0.4.27
 
 # ── Document processing ───────────────────────────────────────────────────────
 pypdf==4.2.0
