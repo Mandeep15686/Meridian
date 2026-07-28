@@ -65,7 +65,8 @@ async def dense_retrieve(
         placeholders = ", ".join(f"'{s}'" for s in regulation_scope)
         scope_filter = f"AND regulation IN ({placeholders})"
 
-    sql = text(f"""
+    sql = text(
+        f"""
         SET ivfflat.probes = :probes;
         SELECT
             id              AS chunk_id,
@@ -79,7 +80,8 @@ async def dense_retrieve(
         {scope_filter}
         ORDER BY embedding <=> :embedding::vector
         LIMIT :top_k;
-    """)
+    """
+    )
 
     result = await session.execute(
         sql,
@@ -122,7 +124,8 @@ async def bm25_retrieve(
         placeholders = ", ".join(f"'{s}'" for s in regulation_scope)
         scope_filter = f"AND regulation IN ({placeholders})"
 
-    sql = text(f"""
+    sql = text(
+        f"""
         SELECT
             id              AS chunk_id,
             regulation,
@@ -135,7 +138,8 @@ async def bm25_retrieve(
         {scope_filter}
         ORDER BY bm25_score DESC
         LIMIT :top_k;
-    """)
+    """
+    )
 
     result = await session.execute(sql, {"query": query[:512], "top_k": top_k})
     rows = result.mappings().all()

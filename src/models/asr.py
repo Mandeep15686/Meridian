@@ -18,12 +18,10 @@ from src.models.registry import MODELS
 
 logger = logging.getLogger(__name__)
 
-HF_INFERENCE_BASE = (
-    os.getenv(
-        "HF_INFERENCE_ENDPOINT",
-        "https://router.huggingface.co",
-    ).rstrip("/")
-)
+HF_INFERENCE_BASE = os.getenv(
+    "HF_INFERENCE_ENDPOINT",
+    "https://router.huggingface.co",
+).rstrip("/")
 
 HF_ASR_URL = f"{HF_INFERENCE_BASE}/models/{MODELS.asr}"
 
@@ -48,10 +46,26 @@ class Transcription:
     def compliance_statements(self) -> list[str]:
         """Return sentences that contain regulatory keywords."""
         keywords = {
-            "retain", "retention", "delete", "deletion", "gdpr", "consent",
-            "lawful basis", "dpo", "data protection", "personal data",
-            "third party", "transfer", "breach", "notification", "soc",
-            "audit", "compliance", "regulation", "policy", "privacy",
+            "retain",
+            "retention",
+            "delete",
+            "deletion",
+            "gdpr",
+            "consent",
+            "lawful basis",
+            "dpo",
+            "data protection",
+            "personal data",
+            "third party",
+            "transfer",
+            "breach",
+            "notification",
+            "soc",
+            "audit",
+            "compliance",
+            "regulation",
+            "policy",
+            "privacy",
         }
         results = []
         for sentence in self.full_text.split(". "):
@@ -79,9 +93,7 @@ class ASRModel:
             "Authorization": f"Bearer {settings.HF_API_TOKEN}",
         }
 
-    async def transcribe(
-        self, audio_path: Path, language: str = "en"
-    ) -> Transcription:
+    async def transcribe(self, audio_path: Path, language: str = "en") -> Transcription:
         """
         Transcribe an audio file end-to-end.
 
@@ -164,7 +176,9 @@ class ASRModel:
             current_chunk: list[bytes] = []
             chunk_start = 0.0
             silence_frames = 0
-            silence_threshold = int(1.0 * 1000 / frame_duration_ms)  # 1 second of silence
+            silence_threshold = int(
+                1.0 * 1000 / frame_duration_ms
+            )  # 1 second of silence
 
             for i, frame in enumerate(frames):
                 if len(frame) < frame_size:
@@ -194,7 +208,9 @@ class ASRModel:
             return chunks if chunks else [(pcm_data, 0.0)]
 
         except ImportError:
-            logger.warning("webrtcvad not available — falling back to fixed-size chunks")
+            logger.warning(
+                "webrtcvad not available — falling back to fixed-size chunks"
+            )
             return self._fixed_size_chunks(wav_path)
 
     def _fixed_size_chunks(self, wav_path: Path) -> list[tuple[bytes, float]]:
@@ -216,7 +232,9 @@ class ASRModel:
 
         return chunks
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=8), reraise=True)
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=8), reraise=True
+    )
     async def _transcribe_chunk(self, pcm_bytes: bytes, language: str) -> str:
         """Send a single PCM chunk to the Whisper HF endpoint."""
         # Wrap raw PCM in a minimal WAV container
@@ -245,10 +263,14 @@ class ASRModel:
             )
 
         if response.status_code == 503:
-            raise httpx.HTTPStatusError("Whisper model loading", request=response.request, response=response)
+            raise httpx.HTTPStatusError(
+                "Whisper model loading", request=response.request, response=response
+            )
 
         if response.status_code != 200:
-            logger.error("Whisper API error %d: %s", response.status_code, response.text[:200])
+            logger.error(
+                "Whisper API error %d: %s", response.status_code, response.text[:200]
+            )
             return ""
 
         data = response.json()

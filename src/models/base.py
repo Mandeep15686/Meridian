@@ -89,6 +89,7 @@ class BaseHFModel(ABC):
             return None
         try:
             import redis.asyncio as aioredis
+
             r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
             raw = await r.get(key)
             if raw:
@@ -103,6 +104,7 @@ class BaseHFModel(ABC):
             return
         try:
             import redis.asyncio as aioredis
+
             r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
             await r.setex(key, settings.RETRIEVAL_CACHE_TTL, json.dumps(value))
         except Exception as exc:

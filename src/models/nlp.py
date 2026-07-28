@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # ── Named Entity Recognition ──────────────────────────────────────────────────
 
+
 @dataclass
 class NEREntity:
     entity_group: str
@@ -62,6 +63,7 @@ class NERModel(BaseHFModel):
 
 # ── Extractive QA ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class QAAnswer:
     answer: str
@@ -105,6 +107,7 @@ class QAModel(BaseHFModel):
 
 
 # ── Zero-shot Classification ──────────────────────────────────────────────────
+
 
 @dataclass
 class ClassificationResult:
@@ -208,6 +211,7 @@ class RegulatoryEntityClassifier(ZeroShotClassifier):
 
 # ── Summarisation ─────────────────────────────────────────────────────────────
 
+
 class Summarizer(BaseHFModel):
     """
     Abstractive summarisation using facebook/bart-large-cnn.
@@ -239,19 +243,20 @@ class Summarizer(BaseHFModel):
             return await self._summarize_single(text, max_length, min_length)
 
         # Chunk-and-summarise
-        chunks = [
-            text[i : i + max_chars]
-            for i in range(0, len(text), max_chars)
-        ]
+        chunks = [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
         chunk_summaries = []
         for chunk in chunks[:8]:  # cap at 8 chunks to bound latency
-            summary = await self._summarize_single(chunk, max_length // 2, min_length // 2)
+            summary = await self._summarize_single(
+                chunk, max_length // 2, min_length // 2
+            )
             if summary:
                 chunk_summaries.append(summary)
 
         combined = " ".join(chunk_summaries)
         if len(combined) > max_chars:
-            return await self._summarize_single(combined[:max_chars], max_length, min_length)
+            return await self._summarize_single(
+                combined[:max_chars], max_length, min_length
+            )
         return combined
 
     async def _summarize_single(

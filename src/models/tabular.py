@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # ── TAPAS Table Question Answering ────────────────────────────────────────────
 
+
 @dataclass
 class TAPASAnswer:
     question: str
@@ -34,7 +35,7 @@ class TAPASModel(BaseHFModel):
     cell-referenced answers with optional aggregation.
     """
 
-    MAX_ROWS = 200      # TAPAS performance degrades with very large tables
+    MAX_ROWS = 200  # TAPAS performance degrades with very large tables
     MAX_COLS = 20
 
     def __init__(self) -> None:
@@ -67,7 +68,9 @@ class TAPASModel(BaseHFModel):
         """
         # Truncate large tables to stay within TAPAS limits
         if len(df) > self.MAX_ROWS:
-            logger.warning("Table has %d rows; truncating to %d for TAPAS", len(df), self.MAX_ROWS)
+            logger.warning(
+                "Table has %d rows; truncating to %d for TAPAS", len(df), self.MAX_ROWS
+            )
             df = df.head(self.MAX_ROWS)
         if len(df.columns) > self.MAX_COLS:
             df = df.iloc[:, : self.MAX_COLS]
@@ -125,19 +128,22 @@ class TAPASModel(BaseHFModel):
                 answers.append(ans)
             except Exception as exc:
                 logger.warning("TAPAS failed for '%s': %s", q[:60], exc)
-                answers.append(TAPASAnswer(question=q, answer="", cells=[], aggregator="NONE"))
+                answers.append(
+                    TAPASAnswer(question=q, answer="", cells=[], aggregator="NONE")
+                )
         return answers
 
 
 # ── Chronos-T5 Time Series Forecasting ────────────────────────────────────────
 
+
 @dataclass
 class ForecastResult:
     timestamps: list[str]
     forecast_median: list[float]
-    forecast_lower: list[float]   # 10th percentile
-    forecast_upper: list[float]   # 90th percentile
-    anomaly_periods: list[str]    # timestamps where actual deviates significantly
+    forecast_lower: list[float]  # 10th percentile
+    forecast_upper: list[float]  # 90th percentile
+    anomaly_periods: list[str]  # timestamps where actual deviates significantly
     horizon: int
 
 
@@ -149,9 +155,9 @@ class TimeSeriesForecaster:
     HF API latency for this compute-bound step.
     """
 
-    HISTORY_MIN = 10        # minimum historical points required
-    HORIZON = 7             # forecast horizon in periods
-    ANOMALY_Z_THRESHOLD = 2.0   # z-score threshold for anomaly flagging
+    HISTORY_MIN = 10  # minimum historical points required
+    HORIZON = 7  # forecast horizon in periods
+    ANOMALY_Z_THRESHOLD = 2.0  # z-score threshold for anomaly flagging
 
     def __init__(self) -> None:
         self._pipeline = None
@@ -185,16 +191,17 @@ class TimeSeriesForecaster:
             Tuple of (time_column_name, value_column_name) or (None, None).
         """
         date_cols = [
-            col for col in df.columns
+            col
+            for col in df.columns
             if pd.api.types.is_datetime64_any_dtype(df[col])
             or "date" in str(col).lower()
             or "time" in str(col).lower()
             or "timestamp" in str(col).lower()
         ]
         numeric_cols = [
-            col for col in df.columns
-            if pd.api.types.is_numeric_dtype(df[col])
-            and col not in date_cols
+            col
+            for col in df.columns
+            if pd.api.types.is_numeric_dtype(df[col]) and col not in date_cols
         ]
 
         if not date_cols or not numeric_cols:
@@ -244,7 +251,9 @@ class TimeSeriesForecaster:
             upper = np.quantile(samples, 0.9, axis=0).tolist()
 
         except Exception as exc:
-            logger.warning("Chronos inference failed, using statistical fallback: %s", exc)
+            logger.warning(
+                "Chronos inference failed, using statistical fallback: %s", exc
+            )
             return self._statistical_fallback(time_series, timestamps)
 
         # Detect anomalies in historical data (where actual deviates from model expectation)

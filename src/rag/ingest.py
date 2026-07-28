@@ -181,7 +181,8 @@ async def upsert_chunks(
     ):
         vec_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-        stmt = text("""
+        stmt = text(
+            """
             INSERT INTO chunks (
                 id, document_id, corpus_id, regulation, article, article_title,
                 jurisdiction, chunk_index, content, token_count, embedding
@@ -193,7 +194,8 @@ async def upsert_chunks(
             )
             ON CONFLICT (document_id, chunk_index) DO NOTHING
             RETURNING id;
-        """)
+        """
+        )
 
         result = await session.execute(
             stmt,

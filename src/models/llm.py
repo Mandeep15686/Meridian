@@ -26,6 +26,7 @@ def _extract_message_text(content: Any) -> str:
             parts.append(text)
     return "".join(parts)
 
+
 SYNTHESIS_SYSTEM_PROMPT = """You are a regulatory compliance expert. Your task is to analyze
 a company's policy documents against specific regulatory requirements and identify compliance gaps.
 
@@ -86,7 +87,9 @@ class ClaudeClient:
 
     def __init__(self) -> None:
         self._client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self._async_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self._async_client = anthropic.AsyncAnthropic(
+            api_key=settings.ANTHROPIC_API_KEY
+        )
 
     @retry(
         stop=stop_after_attempt(3),
@@ -165,7 +168,9 @@ class ClaudeClient:
                 return []
             return gaps
         except json.JSONDecodeError as exc:
-            logger.error("Failed to parse synthesis JSON: %s\nRaw: %s", exc, raw_text[:500])
+            logger.error(
+                "Failed to parse synthesis JSON: %s\nRaw: %s", exc, raw_text[:500]
+            )
             return []
 
     def _log_token_usage(self, usage: Any) -> None:
@@ -174,10 +179,13 @@ class ClaudeClient:
             return
         try:
             import mlflow
-            mlflow.log_metrics({
-                "synthesis_input_tokens": usage.input_tokens,
-                "synthesis_output_tokens": usage.output_tokens,
-            })
+
+            mlflow.log_metrics(
+                {
+                    "synthesis_input_tokens": usage.input_tokens,
+                    "synthesis_output_tokens": usage.output_tokens,
+                }
+            )
         except Exception:
             pass  # Don't fail the pipeline for metrics logging
 
@@ -199,7 +207,11 @@ class ClaudeClient:
         minor = sum(1 for g in gaps if g.get("severity") == "minor")
 
         frameworks = {g.get("framework", "unknown") for g in gaps}
-        top_articles = [g.get("regulatory_article", "") for g in gaps if g.get("severity") == "critical"][:3]
+        top_articles = [
+            g.get("regulatory_article", "")
+            for g in gaps
+            if g.get("severity") == "critical"
+        ][:3]
 
         prompt = (
             f"Write a concise 2–3 paragraph executive summary of these compliance findings. "

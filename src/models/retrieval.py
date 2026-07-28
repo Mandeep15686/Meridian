@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # ── Sentence similarity (loaded locally — used by hallucination gate) ─────────
 
+
 class SimilarityModel:
     """
     Wraps sentence-transformers/all-MiniLM-L6-v2 loaded in-process.
@@ -76,6 +77,7 @@ class SimilarityModel:
 
 
 # ── Cross-encoder reranker (HF Inference API) ────────────────────────────────
+
 
 @dataclass
 class RankedChunk:
@@ -145,9 +147,15 @@ class CrossEncoderReranker(BaseHFModel):
             if isinstance(item, list):
                 # Find the score for the positive/relevant label
                 for entry in item:
-                    if isinstance(entry, dict) and entry.get("label") in ("entailment", "LABEL_1", "1"):
+                    if isinstance(entry, dict) and entry.get("label") in (
+                        "entailment",
+                        "LABEL_1",
+                        "1",
+                    ):
                         return float(entry.get("score", 0.0))
-                return max(float(e.get("score", 0.0)) for e in item if isinstance(e, dict))
+                return max(
+                    float(e.get("score", 0.0)) for e in item if isinstance(e, dict)
+                )
             if isinstance(item, dict):
                 return float(item.get("score", 0.0))
             return 0.0

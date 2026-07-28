@@ -9,10 +9,18 @@ from src.models.tabular import TAPASModel, TimeSeriesForecaster
 from src.models.vision import ImageCaptioner, VQAModel
 
 __all__ = [
-    "MODELS", "ModelRegistry",
-    "NERModel", "QAModel", "ZeroShotClassifier", "Summarizer",
-    "SimilarityModel", "CrossEncoderReranker",
-    "ASRModel", "ImageCaptioner", "VQAModel",
-    "TAPASModel", "TimeSeriesForecaster",
+    "MODELS",
+    "ModelRegistry",
+    "NERModel",
+    "QAModel",
+    "ZeroShotClassifier",
+    "Summarizer",
+    "SimilarityModel",
+    "CrossEncoderReranker",
+    "ASRModel",
+    "ImageCaptioner",
+    "VQAModel",
+    "TAPASModel",
+    "TimeSeriesForecaster",
     "ClaudeClient",
 ]

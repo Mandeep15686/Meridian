@@ -37,6 +37,7 @@ def _image_bytes_to_base64(data: bytes) -> str:
 
 # ── BLIP-2 Image Captioning ───────────────────────────────────────────────────
 
+
 @dataclass
 class CaptionResult:
     caption: str
@@ -85,12 +86,13 @@ class ImageCaptioner(BaseHFModel):
         return await self.caption(
             image_source,
             prompt="Describe this compliance or privacy interface in detail, "
-                   "noting any consent options, data retention information, "
-                   "privacy notices, or regulatory elements.",
+            "noting any consent options, data retention information, "
+            "privacy notices, or regulatory elements.",
         )
 
 
 # ── ViLT Visual Question Answering ────────────────────────────────────────────
+
 
 @dataclass
 class VQAAnswer:
@@ -115,9 +117,7 @@ class VQAModel(BaseHFModel):
             return raw
         return []
 
-    async def ask(
-        self, image_source: Path | bytes, question: str
-    ) -> VQAAnswer:
+    async def ask(self, image_source: Path | bytes, question: str) -> VQAAnswer:
         """Ask a single question about an image."""
         if isinstance(image_source, Path):
             b64 = _image_to_base64(image_source)
