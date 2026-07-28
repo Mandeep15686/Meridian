@@ -13,6 +13,7 @@ concurrency:
 env:
   PYTHON_VERSION: "3.12"
   # Test-safe placeholder values (no real API calls in unit tests)
+  OPENAI_API_KEY: sk-test-placeholder
   ANTHROPIC_API_KEY: sk-ant-test-placeholder
   HF_API_TOKEN: hf_test_placeholder
   MERIDIAN_API_KEY: mer_test_aaaabbbbccccdddd1111222233334444
