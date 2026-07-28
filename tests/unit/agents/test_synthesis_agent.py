@@ -60,11 +60,15 @@ class TestFormatRegulatoryContext:
     def test_chunk_without_article(self):
         from src.agents.synthesis_agent import _format_regulatory_context
 
-        chunk = make_retrieved_chunk(chunk_id="c1", article=None)
+        chunk = make_retrieved_chunk(
+            chunk_id="c1",
+            article=None,
+            content="Personal data shall be processed lawfully.",
+        )
         result = _format_regulatory_context([chunk])
         assert "GDPR" in result
         # Should not contain " — None"
-        assert "None" not in result
+        assert " — None" not in result
 
 
 class TestFormatPolicyContent:
