@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from celery import Celery
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from src.config import settings
 
@@ -83,11 +83,10 @@ def run_compliance_job(self: Any, job_id: str) -> dict[str, Any]:
 
 async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
     """Async implementation of the compliance job task."""
+    from src.db.models import Job, JobFile, JobStatus
     from src.db.session import get_db_session
-    from src.db.models import ComplianceGap, Job, JobFile, JobStatus, Report, ReportFormat
     from src.graph.graph import run_pipeline
     from src.graph.state import UploadedFile
-    from src.storage.base import get_storage
 
     logger.info("Starting compliance job: %s", job_id)
 
@@ -102,7 +101,7 @@ async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
 
         # Mark as processing
         job.status = JobStatus.PROCESSING
-        job.started_at = datetime.now(timezone.utc)
+        job.started_at = datetime.now(UTC)
         job.current_stage = "classify_input"
         await db.commit()
 
@@ -158,15 +157,18 @@ async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
 
         # Retry if we have retries left
         if task.request.retries < task.max_retries:
-            raise task.retry(exc=exc, countdown=30 * (task.request.retries + 1))
+            raise task.retry(
+                exc=exc,
+                countdown=30 * (task.request.retries + 1),
+            ) from exc
 
         return {"status": "failed", "error": str(exc)}
 
 
 async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: list[Any]) -> None:
     """Save compliance gaps, update job stats, and generate reports."""
-    from src.db.session import get_db_session
     from src.db.models import ComplianceGap, GapSeverity, Job, JobStatus, Report, ReportFormat
+    from src.db.session import get_db_session
 
     report = final_state.get("final_report")
     if not report:
@@ -200,7 +202,7 @@ async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: l
         result = await db.execute(select(Job).where(Job.id == job_id))
         job = result.scalar_one()
         job.status = JobStatus.COMPLETE
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = datetime.now(UTC)
         job.total_gaps = report.total_gaps
         job.gaps_critical = report.gaps_critical
         job.gaps_major = report.gaps_major
@@ -225,7 +227,7 @@ async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: l
                 format=ReportFormat.JSON,
                 storage_key=report_key,
                 size_bytes=len(report_json),
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
         )
 
@@ -237,15 +239,15 @@ async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: l
 
 async def _mark_failed(job_id: str, error_message: str, error_stage: str, retry_count: int) -> None:
     """Mark a job as failed in the database."""
-    from src.db.session import get_db_session
     from src.db.models import Job, JobStatus
+    from src.db.session import get_db_session
 
     async with get_db_session() as db:
         result = await db.execute(select(Job).where(Job.id == job_id))
         job = result.scalar_one_or_none()
         if job:
             job.status = JobStatus.FAILED
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(UTC)
             job.error_code = "pipeline_failed"
             job.error_message = error_message[:1000]
             job.error_stage = error_stage
@@ -258,9 +260,11 @@ async def _deliver_webhook(job_id: str) -> None:
     import hashlib
     import hmac
     import json
+
     import httpx
-    from src.db.session import get_db_session
+
     from src.db.models import Job
+    from src.db.session import get_db_session
 
     async with get_db_session() as db:
         result = await db.execute(select(Job).where(Job.id == job_id))
@@ -286,7 +290,7 @@ async def _deliver_webhook(job_id: str) -> None:
         headers = {
             "Content-Type": "application/json",
             "X-Meridian-Job-Id": job_id,
-            "X-Meridian-Timestamp": str(int(datetime.now(timezone.utc).timestamp())),
+            "X-Meridian-Timestamp": str(int(datetime.now(UTC).timestamp())),
         }
 
         if settings.WEBHOOK_SECRET:
@@ -325,11 +329,12 @@ def expire_old_jobs() -> int:
 
 
 async def _expire_old_jobs_async() -> int:
-    from src.db.session import get_db_session
-    from src.db.models import Job, JobStatus
     from sqlalchemy import delete
 
-    now = datetime.now(timezone.utc)
+    from src.db.models import Job
+    from src.db.session import get_db_session
+
+    now = datetime.now(UTC)
     async with get_db_session() as db:
         result = await db.execute(select(Job.id).where(Job.expires_at < now))
         expired_ids = [row[0] for row in result.all()]
@@ -349,8 +354,8 @@ def deliver_pending_webhooks() -> int:
 
 
 async def _deliver_pending_webhooks_async() -> int:
-    from src.db.session import get_db_session
     from src.db.models import Job, JobStatus
+    from src.db.session import get_db_session
 
     async with get_db_session() as db:
         result = await db.execute(
@@ -358,7 +363,7 @@ async def _deliver_pending_webhooks_async() -> int:
             .where(
                 Job.status == JobStatus.COMPLETE,
                 Job.webhook_url.isnot(None),
-                Job.webhook_delivered == False,
+                Job.webhook_delivered.is_(False),
                 Job.webhook_attempts < 3,
             )
             .limit(10)

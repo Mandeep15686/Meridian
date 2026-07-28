@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import typer
 from rich.console import Console
 
-from src.eval.thresholds import THRESHOLDS, check_thresholds
+from src.eval.thresholds import check_thresholds
 
 console = Console()
 app = typer.Typer()
@@ -31,6 +31,7 @@ def _load_from_mlflow(run_id: str | None = None) -> dict[str, float]:
     """Load the latest eval metrics from MLflow."""
     try:
         import mlflow
+
         from src.config import settings
 
         mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
@@ -38,7 +39,7 @@ def _load_from_mlflow(run_id: str | None = None) -> dict[str, float]:
 
         if run_id:
             run = client.get_run(run_id)
-            return {k: v for k, v in run.data.metrics.items()}
+            return dict(run.data.metrics)
 
         # Get the latest run from the eval experiment
         experiment = client.get_experiment_by_name(settings.MLFLOW_EXPERIMENT_NAME)
@@ -104,10 +105,7 @@ def main(
     console.print("[bold]Meridian threshold checker[/bold]\n")
 
     # Load metrics
-    if metrics_file:
-        metrics = _load_from_file(metrics_file)
-    else:
-        metrics = _load_from_mlflow(run_id)
+    metrics = _load_from_file(metrics_file) if metrics_file else _load_from_mlflow(run_id)
 
     if not metrics:
         console.print("[yellow]No metrics available — cannot check thresholds[/yellow]")

@@ -24,8 +24,9 @@ app = typer.Typer()
 
 async def _check_database() -> tuple[bool, str]:
     try:
-        from src.db.session import engine
         from sqlalchemy import text
+
+        from src.db.session import engine
 
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT version()"))
@@ -45,6 +46,7 @@ async def _check_database() -> tuple[bool, str]:
 async def _check_redis() -> tuple[bool, str]:
     try:
         import redis.asyncio as aioredis
+
         from src.config import settings
 
         r = aioredis.from_url(settings.REDIS_URL)
@@ -60,6 +62,7 @@ async def _check_redis() -> tuple[bool, str]:
 async def _check_hf_api() -> tuple[bool, str]:
     try:
         import httpx
+
         from src.config import settings
 
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -93,13 +96,14 @@ async def _check_anthropic_api() -> tuple[bool, str]:
 
 async def _check_corpus() -> tuple[bool, str]:
     try:
+        from sqlalchemy import func, select
+
+        from src.db.models import Chunk, Corpus
         from src.db.session import get_db_session
-        from src.db.models import Corpus, Chunk
-        from sqlalchemy import select, func
 
         async with get_db_session() as session:
             corpus_result = await session.execute(
-                select(Corpus.slug, Corpus.chunk_count).where(Corpus.is_active == True)
+                select(Corpus.slug, Corpus.chunk_count).where(Corpus.is_active)
             )
             corpora = corpus_result.all()
 
@@ -153,8 +157,6 @@ def _check_system_deps() -> list[tuple[str, bool, str]]:
 
     # sentence-transformers (local similarity model)
     try:
-        from sentence_transformers import SentenceTransformer
-
         results.append(("sentence-transformers", True, "Library installed"))
     except ImportError as exc:
         results.append(("sentence-transformers", False, str(exc)))

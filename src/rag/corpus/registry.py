@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from src.rag.corpus.gdpr_loader import GDPRLoader
-from src.rag.corpus.gdpr_loader import BaseCorpusLoader
-from src.rag.corpus.gdpr_loader import CorpusDocument
-
+from src.rag.corpus.gdpr_loader import BaseCorpusLoader, CorpusDocument, GDPRLoader
 
 # Minimal stubs for corpora without full loaders yet.
 # Replace with real implementations following the GDPRLoader pattern.

@@ -6,7 +6,6 @@ import pytest
 
 from src.rag.retrieve import reciprocal_rank_fusion
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 

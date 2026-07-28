@@ -104,9 +104,7 @@ async def data_agent_node(state: MeridianState) -> dict:
                 summary_lines.append(f"{ans['question']}: {ans['answer']}")
         if forecast_output and forecast_output.get("anomaly_periods"):
             anomaly_periods = [str(period) for period in forecast_output["anomaly_periods"][:3]]
-            summary_lines.append(
-                f"Time series anomalies detected at: {', '.join(anomaly_periods)}"
-            )
+            summary_lines.append(f"Time series anomalies detected at: {', '.join(anomaly_periods)}")
         high_risk = [a for a in anomaly_scores if a.get("risk_score", 0) > 0.7]
         if high_risk:
             summary_lines.append(f"{len(high_risk)} high-risk rows detected")
@@ -168,7 +166,6 @@ def _score_anomalies(df: pd.DataFrame) -> list[dict]:
 
     Returns list of {row_index, column, value, risk_score} for outliers.
     """
-    import numpy as np
 
     anomalies: list[dict] = []
     numeric_cols = df.select_dtypes(include=[float, int]).columns.tolist()

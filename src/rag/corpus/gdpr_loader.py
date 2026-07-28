@@ -117,6 +117,7 @@ class GDPRLoader(BaseCorpusLoader):
         """Download the GDPR full text from EUR-Lex."""
         try:
             import httpx
+
             from src.config import settings
 
             response = httpx.get(

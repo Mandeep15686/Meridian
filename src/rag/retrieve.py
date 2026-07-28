@@ -14,7 +14,6 @@ import json
 import logging
 from typing import Any
 
-import numpy as np
 from openai import AsyncOpenAI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -294,7 +293,6 @@ async def _set_cached_results(key: str, results: list[RetrievedChunk]) -> None:
         return
     try:
         import redis.asyncio as aioredis
-        from dataclasses import asdict
 
         r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         serialised = json.dumps([vars(r_) for r_ in results])

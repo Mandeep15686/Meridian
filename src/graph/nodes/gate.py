@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from uuid import uuid4
 
 from src.config import settings
 from src.graph.state import CandidateGap, MeridianState, RetrievedChunk, VerifiedGap

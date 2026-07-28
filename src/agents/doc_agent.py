@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import time
-from pathlib import Path
 
 from src.db.session import get_db_session
 from src.graph.state import AgentExtraction, Entity, MeridianState, QAResult, UploadedFile
@@ -13,8 +12,6 @@ from src.models.nlp import (
     QAModel,
     RegulatoryEntityClassifier,
     Summarizer,
-    REGULATORY_ENTITY_LABELS,
-    LABEL_TO_TYPE,
 )
 from src.rag.ingest import extract_text
 from src.rag.retrieve import hybrid_retrieve
@@ -67,7 +64,8 @@ async def doc_agent_node(state: MeridianState) -> dict:
         storage = get_storage()
         file_bytes = await storage.download(file.storage_key)
 
-        import tempfile, pathlib
+        import pathlib
+        import tempfile
 
         suffix = pathlib.Path(file.filename).suffix
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
@@ -80,7 +78,7 @@ async def doc_agent_node(state: MeridianState) -> dict:
             # Unit tests use plain-text bytes with a .pdf filename.
             # Fall back to UTF-8 decoding instead of failing.
             raw_text = file_bytes.decode("utf-8", errors="replace")
-            page_count = 0
+            # page_count = 0
         finally:
             tmp_path.unlink(missing_ok=True)
 

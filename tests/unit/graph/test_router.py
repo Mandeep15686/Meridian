@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 from src.graph.router import _detect_modality, classify_input_node, route_to_agents
 from src.graph.state import UploadedFile
-from tests.conftest import make_state, make_uploaded_file
+from tests.conftest import make_state
 
 
 def _make_file(filename: str, mime_type: str, modality: str = "unknown") -> UploadedFile:
@@ -157,7 +155,6 @@ class TestRouteToAgents:
         assert sends[0].node == "doc_agent"
 
     def test_audio_file_routes_to_audio_agent(self):
-        from langgraph.constants import Send
 
         file = _make_file("meeting.mp3", "audio/mpeg", modality="audio")
         state = make_state(input_files=[file])
@@ -168,7 +165,6 @@ class TestRouteToAgents:
         assert sends[0].node == "audio_agent"
 
     def test_image_file_routes_to_vision_agent(self):
-        from langgraph.constants import Send
 
         file = _make_file("screenshot.png", "image/png", modality="image")
         state = make_state(input_files=[file])
@@ -179,7 +175,6 @@ class TestRouteToAgents:
         assert sends[0].node == "vision_agent"
 
     def test_tabular_file_routes_to_data_agent(self):
-        from langgraph.constants import Send
 
         file = _make_file("data.csv", "text/csv", modality="tabular")
         state = make_state(input_files=[file])
@@ -190,7 +185,6 @@ class TestRouteToAgents:
         assert sends[0].node == "data_agent"
 
     def test_mixed_files_produce_multiple_sends(self):
-        from langgraph.constants import Send
 
         files = [
             _make_file("policy.pdf", "application/pdf", modality="document"),
@@ -208,7 +202,6 @@ class TestRouteToAgents:
         assert "vision_agent" in agent_nodes
 
     def test_unknown_modality_skipped(self):
-        from langgraph.constants import Send
 
         files = [
             _make_file("policy.pdf", "application/pdf", modality="document"),
@@ -223,7 +216,6 @@ class TestRouteToAgents:
         assert sends[0].node == "doc_agent"
 
     def test_no_valid_files_routes_to_synthesize(self):
-        from langgraph.constants import Send
 
         files = [_make_file("mystery.xyz", "application/unknown", modality="unknown")]
         state = make_state(input_files=files)
@@ -236,7 +228,6 @@ class TestRouteToAgents:
 
     def test_each_file_gets_current_file_in_state(self):
         """Each Send should include _current_file in the state payload."""
-        from langgraph.constants import Send
 
         files = [
             _make_file("policy1.pdf", "application/pdf", modality="document"),

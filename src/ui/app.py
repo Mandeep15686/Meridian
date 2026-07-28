@@ -382,9 +382,9 @@ def render_sidebar() -> str:
         page = cast(
             str,
             st.radio(
-            "Navigation",
-            options=["Submit", "Status", "Report"],
-            index=0,
+                "Navigation",
+                options=["Submit", "Status", "Report"],
+                index=0,
             ),
         )
 

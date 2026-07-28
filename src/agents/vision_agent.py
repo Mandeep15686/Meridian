@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import time
-from pathlib import Path
 
 from src.graph.state import AgentExtraction, MeridianState, UploadedFile
 from src.models.vision import ImageCaptioner, VQAModel

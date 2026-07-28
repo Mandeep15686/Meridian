@@ -8,7 +8,6 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel
 
-
 # ── Sub-types stored in state ─────────────────────────────────────────────────
 
 

@@ -12,8 +12,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
-from typing import cast
+from typing import Any, cast
 
 import typer
 from rich.console import Console
@@ -106,6 +105,7 @@ async def run_ragas_eval(
         Dict mapping metric name to float score.
     """
     try:
+        from datasets import Dataset
         from ragas import evaluate
         from ragas.metrics import (
             answer_relevancy,
@@ -113,7 +113,6 @@ async def run_ragas_eval(
             context_recall,
             faithfulness,
         )
-        from datasets import Dataset
     except ImportError:
         raise ImportError(
             "RAGAS and datasets are required for evaluation. "

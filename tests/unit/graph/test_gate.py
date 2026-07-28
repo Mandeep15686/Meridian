@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from src.graph.nodes.gate import gate_routing, hallucination_gate_node
-from src.graph.state import CandidateGap, VerifiedGap
-from tests.conftest import make_candidate_gap, make_retrieved_chunk, make_state_with_gaps
-
+from tests.conftest import make_candidate_gap, make_retrieved_chunk
 
 # ── Helper to make a simple state for gate testing ────────────────────────────
 
@@ -180,7 +176,6 @@ class TestHallucinationGate:
 class TestGateRouting:
     def test_routes_to_synthesize_when_failures_and_retries_available(self):
         """gate_routing should return 'synthesize' when failed_gap_ids and retries < max."""
-        from src.config import settings
 
         state = {
             "failed_gap_ids": ["gap_001"],

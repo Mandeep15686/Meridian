@@ -7,13 +7,10 @@ LLM API calls are mocked to avoid cost and nondeterminism.
 
 from __future__ import annotations
 
-import asyncio
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 pytestmark = pytest.mark.integration
 
@@ -61,9 +58,9 @@ class TestDocumentOnlyPipeline:
         self, sample_policy_pdf_path: Path, mock_claude_gaps: list, mock_chunks: list
     ):
         """End-to-end: a document submission should produce verified compliance gaps."""
-        from tests.conftest import make_uploaded_file, mock_storage
         from src.graph.graph import run_pipeline
         from src.graph.state import UploadedFile
+        from tests.conftest import mock_storage
 
         policy_bytes = sample_policy_pdf_path.read_bytes()
         storage_mock = mock_storage(policy_bytes)

@@ -35,17 +35,17 @@ async def _run_diagnostic(
 ) -> None:
     """Execute the full retrieval pipeline and show results at each stage."""
     from src.db.session import get_db_session
+    from src.models.retrieval import CrossEncoderReranker
     from src.rag.retrieve import (
-        embed_query,
-        dense_retrieve,
         bm25_retrieve,
+        dense_retrieve,
+        embed_query,
         reciprocal_rank_fusion,
     )
-    from src.models.retrieval import CrossEncoderReranker
 
     reranker = CrossEncoderReranker()
 
-    console.print(f"\n[bold]Retrieval diagnostic[/bold]")
+    console.print("\n[bold]Retrieval diagnostic[/bold]")
     console.print(f"Query: [cyan]{query}[/cyan]")
     console.print(f"Scope: {scope}")
     console.print(f"Top-k: {top_k}\n")
@@ -112,7 +112,7 @@ async def _run_diagnostic(
             console.print(f"  Overlapping chunk IDs: {', '.join(list(overlap)[:5])}")
 
         # ── Stage 4: RRF fusion ───────────────────────────────────────────────
-        console.print(f"\n[bold]Stage 4:[/bold] Reciprocal Rank Fusion...")
+        console.print("\n[bold]Stage 4:[/bold] Reciprocal Rank Fusion...")
         fused = reciprocal_rank_fusion(dense_results, bm25_results)
         top_20 = fused[:20]
         console.print(f"  Merged to: {len(fused)} unique chunks → top {len(top_20)} for reranking")

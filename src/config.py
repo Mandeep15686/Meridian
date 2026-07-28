@@ -131,23 +131,23 @@ class Settings(BaseSettings):
         return v
 
     @model_validator(mode="after")
-    def validate_pinecone_config(self) -> "Settings":
+    def validate_pinecone_config(self) -> Settings:
         if self.VECTOR_STORE == "pinecone" and not self.PINECONE_API_KEY:
             raise ValueError("PINECONE_API_KEY is required when VECTOR_STORE=pinecone")
         return self
 
     @model_validator(mode="after")
-    def validate_gcs_config(self) -> "Settings":
-        if self.STORAGE_BACKEND == "gcs":
-            if not self.GCS_UPLOADS_BUCKET or not self.GCS_REPORTS_BUCKET:
-                raise ValueError(
-                    "GCS_UPLOADS_BUCKET and GCS_REPORTS_BUCKET are required "
-                    "when STORAGE_BACKEND=gcs"
-                )
+    def validate_gcs_config(self) -> Settings:
+        if self.STORAGE_BACKEND == "gcs" and (
+            not self.GCS_UPLOADS_BUCKET or not self.GCS_REPORTS_BUCKET
+        ):
+            raise ValueError(
+                "GCS_UPLOADS_BUCKET and GCS_REPORTS_BUCKET are required when STORAGE_BACKEND=gcs"
+            )
         return self
 
     @model_validator(mode="after")
-    def set_log_format_for_production(self) -> "Settings":
+    def set_log_format_for_production(self) -> Settings:
         if self.ENVIRONMENT == "production":
             object.__setattr__(self, "LOG_FORMAT", "json")
         return self

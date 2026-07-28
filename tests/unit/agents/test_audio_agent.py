@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.graph.state import AgentExtraction, TranscriptSegment
+from src.graph.state import AgentExtraction
 from tests.conftest import SAMPLE_AUDIO_TRANSCRIPT, make_state, make_uploaded_file, mock_storage
 
 
@@ -24,7 +23,8 @@ class TestAudioAgent:
     @pytest.mark.asyncio
     async def test_transcription_included_in_extraction(self):
         """Audio agent should include full transcript text in the extraction."""
-        from src.models.asr import Transcription, TranscriptSegment as ASRSegment
+        from src.models.asr import Transcription
+        from src.models.asr import TranscriptSegment as ASRSegment
 
         file = _make_audio_file()
         state = make_state(input_files=[file])
@@ -84,7 +84,8 @@ class TestAudioAgent:
     @pytest.mark.asyncio
     async def test_transcript_segments_in_extraction(self):
         """Audio agent should include structured transcript segments."""
-        from src.models.asr import Transcription, TranscriptSegment as ASRSegment
+        from src.models.asr import Transcription
+        from src.models.asr import TranscriptSegment as ASRSegment
 
         file = _make_audio_file()
         state = make_state(input_files=[file])
@@ -128,7 +129,8 @@ class TestAudioAgent:
     @pytest.mark.asyncio
     async def test_speakers_extracted(self):
         """Audio agent should surface unique speaker labels."""
-        from src.models.asr import Transcription, TranscriptSegment as ASRSegment
+        from src.models.asr import Transcription
+        from src.models.asr import TranscriptSegment as ASRSegment
 
         file = _make_audio_file()
         state = make_state(input_files=[file])
@@ -221,7 +223,8 @@ class TestAudioAgent:
     @pytest.mark.asyncio
     async def test_compliance_summary_generated(self):
         """Audio agent should generate a summary of compliance-relevant statements."""
-        from src.models.asr import Transcription, TranscriptSegment as ASRSegment
+        from src.models.asr import Transcription
+        from src.models.asr import TranscriptSegment as ASRSegment
 
         file = _make_audio_file()
         state = make_state(input_files=[file])

@@ -206,7 +206,7 @@ async def report_node(state: MeridianState) -> dict:
     job_id = state.get("job_id", "unknown")
     verified_gaps: list[VerifiedGap] = state.get("verified_gaps", [])
     regulation_scope = state.get("regulation_scope", [])
-    groundedness_scores: dict[str, float] = state.get("groundedness_scores", {})
+    # groundedness_scores: dict[str, float] = state.get("groundedness_scores", {})
 
     logger.info(
         "[report] job=%s assembling report for %d verified gaps",

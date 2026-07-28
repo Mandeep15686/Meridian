@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.table import Table
 
 from src.config import settings
-from src.eval.thresholds import THRESHOLDS, check_thresholds
+from src.eval.thresholds import THRESHOLDS
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -170,8 +170,8 @@ async def _run_detection_on_example(
 ) -> PredictionResult:
     """Run the full synthesis pipeline on a single example and return predictions."""
     from src.db.session import get_db_session
-    from src.rag.retrieve import hybrid_retrieve
     from src.models.llm import ClaudeClient
+    from src.rag.retrieve import hybrid_retrieve
 
     claude = ClaudeClient()
     t_start = time.monotonic()

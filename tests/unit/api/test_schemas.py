@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 
 from src.api.schemas.all import (
-    SubmitRequest,
-    SubmitOptions,
     GapResponse,
     JobStatusResponse,
+    SubmitOptions,
+    SubmitRequest,
 )
-from datetime import datetime, timezone
 
 
 class TestSubmitRequest:
@@ -156,7 +157,7 @@ class TestJobStatusResponse:
         status = JobStatusResponse(
             job_id="01JTEST",
             status="queued",
-            submitted_at=datetime.now(timezone.utc),
+            submitted_at=datetime.now(UTC),
         )
         assert status.status == "queued"
         assert status.completed_at is None
@@ -167,7 +168,7 @@ class TestJobStatusResponse:
             JobStatusResponse(
                 job_id="01JTEST",
                 status="running",  # not a valid status
-                submitted_at=datetime.now(timezone.utc),
+                submitted_at=datetime.now(UTC),
             )
 
     def test_all_valid_statuses(self):
@@ -175,6 +176,6 @@ class TestJobStatusResponse:
             status = JobStatusResponse(
                 job_id="01JTEST",
                 status=valid_status,
-                submitted_at=datetime.now(timezone.utc),
+                submitted_at=datetime.now(UTC),
             )
             assert status.status == valid_status

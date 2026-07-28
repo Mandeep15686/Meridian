@@ -8,7 +8,6 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any, cast
 
-import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -117,7 +116,6 @@ def create_app() -> FastAPI:
             api_key_prefix = auth_header[7:15]
             try:
                 import redis.asyncio as aioredis
-                from datetime import datetime
 
                 r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
                 minute_key = f"ratelimit:{api_key_prefix}:{int(time.time() // 60)}"
@@ -145,10 +143,15 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception) -> Response:
         logger.exception("Unhandled exception: %s", exc)
-        return cast(Response, JSONResponse(
-            status_code=500,
-            content={"error": {"code": "internal_error", "message": "An internal error occurred"}},
-        ))
+        return cast(
+            Response,
+            JSONResponse(
+                status_code=500,
+                content={
+                    "error": {"code": "internal_error", "message": "An internal error occurred"}
+                },
+            ),
+        )
 
     # ── Routers ───────────────────────────────────────────────────────────────
     app.include_router(router_submit)

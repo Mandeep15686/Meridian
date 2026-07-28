@@ -5,31 +5,30 @@ from __future__ import annotations
 import hashlib
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Literal, cast
+from typing import Literal, cast
 
 import magic
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import require_api_key
 from src.api.schemas.all import (
-    CorpusStatusResponse,
     CorpusInfo,
+    CorpusStatusResponse,
     DependencyStatus,
     GapResponse,
     HealthResponse,
-    JobStatusResponse,
     JobError,
+    JobStatusResponse,
     JobSummary,
     ModelMetadata,
     ReportResponse,
-    SubmittedFileInfo,
-    SubmitRequest,
     SubmitResponse,
+    SubmittedFileInfo,
 )
 from src.config import settings
 from src.db.models import ComplianceGap, Corpus, Job, JobFile, JobStatus, Report, ReportFormat
@@ -157,7 +156,7 @@ async def submit_job(
         )
 
     # Create job record
-    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.JOB_TTL_DAYS)
+    expires_at = datetime.now(UTC) + timedelta(days=settings.JOB_TTL_DAYS)
     job = Job(
         id=job_id,
         status=JobStatus.QUEUED,
@@ -177,7 +176,7 @@ async def submit_job(
 
     run_compliance_job.delay(job_id)
 
-    submitted_at = datetime.now(timezone.utc)
+    submitted_at = datetime.now(UTC)
     logger.info("Job %s queued: %d files, scope=%s", job_id, len(job_files), regulation_scope)
 
     return SubmitResponse(
@@ -334,7 +333,7 @@ async def get_report(
 
     return ReportResponse(
         job_id=job_id,
-        generated_at=job.completed_at or datetime.now(timezone.utc),
+        generated_at=job.completed_at or datetime.now(UTC),
         regulation_scope=job.regulation_scope,
         submitted_files=[
             SubmittedFileInfo(
@@ -369,16 +368,16 @@ async def get_corpus_status(
     """Return metadata and freshness status for all ingested regulatory corpora."""
     from datetime import timedelta
 
-    result = await db.execute(select(Corpus).where(Corpus.is_active == True))
+    result = await db.execute(select(Corpus).where(Corpus.is_active))
     corpora = result.scalars().all()
 
     total_chunks = sum(c.chunk_count for c in corpora)
     stale_threshold = timedelta(days=settings.CORPUS_MAX_STALENESS_DAYS)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     corpus_infos: list[CorpusInfo] = []
     for c in corpora:
-        age = now - c.last_refreshed.replace(tzinfo=timezone.utc)
+        age = now - c.last_refreshed.replace(tzinfo=UTC)
         freshness = cast(
             "Literal['current', 'stale', 'unknown']",
             "stale" if age > stale_threshold else "current",
@@ -408,8 +407,8 @@ async def get_corpus_status(
 @router_health.get("/health", response_model=HealthResponse)
 async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     """Health check with dependency status for load balancer probes."""
-    from sqlalchemy import text as sql_text
     import redis.asyncio as aioredis
+    from sqlalchemy import text as sql_text
 
     # Database
     db_healthy = False
@@ -451,7 +450,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     return HealthResponse(
         status=overall,
         version=settings.VERSION,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         dependencies=deps,
         message=None if overall == "healthy" else "One or more dependencies are degraded",
     )

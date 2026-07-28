@@ -1,23 +1,23 @@
 """Database layer — models, session factory, and migration support."""
 
 from src.db.models import (
+    AgentExtraction,
+    AgentType,
     Base,
-    Job,
-    JobFile,
     Chunk,
+    ComplianceGap,
     Corpus,
     Document,
-    ComplianceGap,
-    Report,
-    AgentExtraction,
     EvalRun,
-    JobStatus,
     FileModality,
-    AgentType,
     GapSeverity,
+    Job,
+    JobFile,
+    JobStatus,
+    Report,
     ReportFormat,
 )
-from src.db.session import get_db, get_db_session, engine, AsyncSessionLocal
+from src.db.session import AsyncSessionLocal, engine, get_db, get_db_session
 
 __all__ = [
     "Base",

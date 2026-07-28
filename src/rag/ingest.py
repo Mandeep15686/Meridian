@@ -4,20 +4,19 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
 from sqlalchemy import select, text
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.db.models import Chunk, Corpus, Document
+from src.db.models import Document
 
 logger = logging.getLogger(__name__)
+
 
 @lru_cache(maxsize=1)
 def get_openai_client() -> AsyncOpenAI:
@@ -82,8 +81,8 @@ def semantic_chunk(
     overlap = overlap or settings.CHUNK_OVERLAP
 
     try:
-        from llama_index.core.node_parser import SemanticSplitterNodeParser
         from llama_index.core import Document as LlamaDoc
+        from llama_index.core.node_parser import SemanticSplitterNodeParser
         from llama_index.embeddings.openai import OpenAIEmbedding
 
         embed_model = OpenAIEmbedding(model=settings.EMBEDDING_MODEL)

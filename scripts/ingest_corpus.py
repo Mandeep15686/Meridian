@@ -21,9 +21,10 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from datetime import UTC
+
 import typer
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 logger = logging.getLogger(__name__)
@@ -36,10 +37,12 @@ async def _ensure_corpus_record(session, loader, force_refresh: bool = False) ->
     Ensure a corpus record exists in the database.
     Returns the corpus ID.
     """
-    from sqlalchemy import select
-    from src.db.models import Corpus
-    from datetime import datetime, timezone
     import uuid
+    from datetime import datetime
+
+    from sqlalchemy import select
+
+    from src.db.models import Corpus
 
     info = loader.corpus_info()
     result = await session.execute(select(Corpus).where(Corpus.slug == info["slug"]))
@@ -59,7 +62,7 @@ async def _ensure_corpus_record(session, loader, force_refresh: bool = False) ->
         await session.flush()
         console.print(f"  Created corpus record: [cyan]{info['slug']}[/cyan]")
     elif force_refresh:
-        corpus.last_refreshed = datetime.now(timezone.utc)
+        corpus.last_refreshed = datetime.now(UTC)
 
     return corpus.id
 
@@ -146,9 +149,9 @@ async def ingest_corpus(
 
     # Update corpus chunk count
     async with get_db_session() as session:
-        from sqlalchemy import select, update
+        from sqlalchemy import func, select, update
+
         from src.db.models import Chunk, Corpus
-        from sqlalchemy import func
 
         count_result = await session.execute(
             select(func.count(Chunk.id)).where(Chunk.corpus_id == corpus_db_id)
@@ -214,7 +217,7 @@ def main(
         console.print(f"Available: {available}")
         raise typer.Exit(1)
 
-    console.print(f"[bold]Meridian corpus ingestion[/bold]")
+    console.print("[bold]Meridian corpus ingestion[/bold]")
     console.print(f"Corpora: {selected}")
     if dev_mode:
         console.print("[yellow]Dev mode enabled — minimal ingestion[/yellow]")

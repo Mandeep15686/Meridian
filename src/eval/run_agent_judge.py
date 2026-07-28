@@ -13,8 +13,8 @@ import asyncio
 import json
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import typer
@@ -34,6 +34,8 @@ def _extract_message_text(content: Any) -> str:
         if isinstance(text, str):
             parts.append(text)
     return "".join(parts)
+
+
 console = Console()
 app = typer.Typer()
 
@@ -84,13 +86,13 @@ def _fetch_recent_traces(lookback_hours: int = 24) -> list[dict[str, Any]]:
 
         client = Client(api_key=settings.LANGCHAIN_API_KEY)
 
-        start_time = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+        start_time = datetime.now(UTC) - timedelta(hours=lookback_hours)
         runs = list(
             client.list_runs(
                 project_name=settings.LANGCHAIN_PROJECT,
                 run_type="chain",
                 start_time=start_time,
-                filter=f'eq(name, "meridian_pipeline")',
+                filter='eq(name, "meridian_pipeline")',
                 limit=100,
             )
         )

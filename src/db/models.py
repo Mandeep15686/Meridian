@@ -12,7 +12,6 @@ from sqlalchemy import (
     ARRAY,
     BigInteger,
     Boolean,
-    Column,
     Date,
     DateTime,
     Enum,
@@ -25,7 +24,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import INET, JSONB, TSVECTOR, UUID
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -36,7 +35,7 @@ class Base(DeclarativeBase):
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
 
-class JobStatus(str, enum.Enum):
+class JobStatus(enum.StrEnum):
     QUEUED = "queued"
     PROCESSING = "processing"
     COMPLETE = "complete"
