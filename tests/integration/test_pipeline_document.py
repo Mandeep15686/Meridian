@@ -79,13 +79,21 @@ class TestDocumentOnlyPipeline:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch(
                 "src.agents.doc_agent._regulatory_classifier.classify_entity",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch(
                 "src.agents.doc_agent.hybrid_retrieve",
                 new_callable=AsyncMock,
@@ -114,7 +122,9 @@ class TestDocumentOnlyPipeline:
                 regulation_scope=["gdpr"],
             )
 
-        assert final_state.get("error") is None, f"Pipeline error: {final_state.get('error')}"
+        assert (
+            final_state.get("error") is None
+        ), f"Pipeline error: {final_state.get('error')}"
         assert final_state.get("final_report") is not None
 
         report = final_state["final_report"]
@@ -156,13 +166,21 @@ class TestDocumentOnlyPipeline:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch(
                 "src.agents.doc_agent._regulatory_classifier.classify_entity",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch(
                 "src.agents.doc_agent.hybrid_retrieve",
                 new_callable=AsyncMock,
@@ -185,7 +203,10 @@ class TestDocumentOnlyPipeline:
             )
 
         # Pipeline should not crash — it should return error state
-        assert final_state.get("error") is not None or final_state.get("final_report") is not None
+        assert (
+            final_state.get("error") is not None
+            or final_state.get("final_report") is not None
+        )
 
     @pytest.mark.asyncio
     async def test_pipeline_empty_document_produces_no_gaps(self):

@@ -171,12 +171,16 @@ def make_state(
     """Build a MeridianState dict for testing."""
     return {
         "job_id": job_id,
-        "input_files": (input_files if input_files is not None else [make_uploaded_file()]),
+        "input_files": (
+            input_files if input_files is not None else [make_uploaded_file()]
+        ),
         "regulation_scope": regulation_scope or ["gdpr"],
         "options": {},
         "raw_extractions": raw_extractions or [],
         "retrieved_chunks": (
-            retrieved_chunks if retrieved_chunks is not None else [make_retrieved_chunk()]
+            retrieved_chunks
+            if retrieved_chunks is not None
+            else [make_retrieved_chunk()]
         ),
         "ner_entities": [],
         "candidate_gaps": candidate_gaps or [],

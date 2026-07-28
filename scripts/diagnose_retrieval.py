@@ -82,7 +82,9 @@ async def _run_diagnostic(
             console.print(dense_table)
 
         # ── Stage 3: BM25 retrieval ───────────────────────────────────────────
-        console.print(f"\n[bold]Stage 3:[/bold] BM25 keyword retrieval (top {top_k * 2})...")
+        console.print(
+            f"\n[bold]Stage 3:[/bold] BM25 keyword retrieval (top {top_k * 2})..."
+        )
         bm25_results = await bm25_retrieve(db, query, scope, top_k * 2)
         console.print(f"  Returned: {len(bm25_results)} chunks")
 
@@ -115,10 +117,14 @@ async def _run_diagnostic(
         console.print("\n[bold]Stage 4:[/bold] Reciprocal Rank Fusion...")
         fused = reciprocal_rank_fusion(dense_results, bm25_results)
         top_20 = fused[:20]
-        console.print(f"  Merged to: {len(fused)} unique chunks → top {len(top_20)} for reranking")
+        console.print(
+            f"  Merged to: {len(fused)} unique chunks → top {len(top_20)} for reranking"
+        )
 
         # ── Stage 5: Cross-encoder reranking ──────────────────────────────────
-        console.print(f"\n[bold]Stage 5:[/bold] Cross-encoder reranking (top {top_k})...")
+        console.print(
+            f"\n[bold]Stage 5:[/bold] Cross-encoder reranking (top {top_k})..."
+        )
         reranked = await reranker.rerank(query=query, candidates=top_20, top_k=top_k)
         console.print(f"  Final ranked: {len(reranked)} chunks\n")
 
@@ -137,7 +143,11 @@ async def _run_diagnostic(
             chunk.chunk_id[:20],
             f"{chunk.rerank_score:.4f}",
             next(
-                (r.get("article") or "—" for r in fused if r["chunk_id"] == chunk.chunk_id),
+                (
+                    r.get("article") or "—"
+                    for r in fused
+                    if r["chunk_id"] == chunk.chunk_id
+                ),
                 "—",
             ),
             chunk.content[:70].replace("\n", " "),
@@ -146,14 +156,18 @@ async def _run_diagnostic(
 
     # Quality assessment
     if not reranked:
-        console.print("\n[red]⚠ No chunks retrieved — check corpus ingestion status[/red]")
+        console.print(
+            "\n[red]⚠ No chunks retrieved — check corpus ingestion status[/red]"
+        )
     elif reranked[0].rerank_score < 0.1:
         console.print(
             f"\n[yellow]⚠ Top rerank score is low ({reranked[0].rerank_score:.4f}) "
             f"— query may not match corpus content well[/yellow]"
         )
     else:
-        console.print(f"\n[green]✓ Top chunk score: {reranked[0].rerank_score:.4f}[/green]")
+        console.print(
+            f"\n[green]✓ Top chunk score: {reranked[0].rerank_score:.4f}[/green]"
+        )
 
 
 @app.command()
@@ -163,7 +177,9 @@ def main(
         ["gdpr"], "--scope", "-s", help="Regulation scope(s) to search"
     ),
     top_k: int = typer.Option(5, "--top-k", "-k", help="Number of chunks to return"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show per-stage results"),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show per-stage results"
+    ),
     job_id: str | None = typer.Option(
         None,
         "--job-id",

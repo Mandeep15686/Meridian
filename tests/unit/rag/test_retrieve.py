@@ -30,7 +30,12 @@ class TestHybridRetrieval:
         """A chunk in both lists should outrank one appearing in only one."""
         dense = [
             {"chunk_id": "BOTH", "content": "x", "dense_score": 0.7, "dense_rank": 1},
-            {"chunk_id": "DENSE_ONLY", "content": "y", "dense_score": 0.9, "dense_rank": 2},
+            {
+                "chunk_id": "DENSE_ONLY",
+                "content": "y",
+                "dense_score": 0.9,
+                "dense_rank": 2,
+            },
         ]
         bm25 = [
             {"chunk_id": "BOTH", "content": "x", "bm25_score": 5.0, "bm25_rank": 1},

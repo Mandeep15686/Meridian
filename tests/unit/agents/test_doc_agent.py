@@ -31,7 +31,11 @@ class TestDocAgent:
         storage_mock = mock_storage(SAMPLE_POLICY_TEXT.encode())
         ner_entities = [
             NEREntity(
-                entity_group="MISC", word="as long as necessary", start=100, end=120, score=0.82
+                entity_group="MISC",
+                word="as long as necessary",
+                start=100,
+                end=120,
+                score=0.82,
             ),
         ]
         retrieval_chunks = [make_retrieved_chunk()]
@@ -48,7 +52,11 @@ class TestDocAgent:
                 new_callable=AsyncMock,
                 return_value="RETENTION_PERIOD",
             ),
-            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch(
                 "src.agents.doc_agent.hybrid_retrieve",
                 new_callable=AsyncMock,
@@ -70,7 +78,9 @@ class TestDocAgent:
 
         entities = extractions[0].ner_entities
         retention_entities = [e for e in entities if e.type == "RETENTION_PERIOD"]
-        assert len(retention_entities) >= 1, "Should find at least one RETENTION_PERIOD entity"
+        assert (
+            len(retention_entities) >= 1
+        ), "Should find at least one RETENTION_PERIOD entity"
 
     @pytest.mark.asyncio
     async def test_handles_empty_text_gracefully(self):
@@ -81,9 +91,7 @@ class TestDocAgent:
 
         storage_mock = mock_storage(b"   ")  # whitespace only
 
-        with (
-            patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-        ):
+        with (patch("src.agents.doc_agent.get_storage", return_value=storage_mock),):
             from src.agents.doc_agent import doc_agent_node
 
             result = await doc_agent_node(state)
@@ -97,18 +105,29 @@ class TestDocAgent:
         state = make_state(input_files=[file])
         state["_current_file"] = file
 
-        expected_chunks = [make_retrieved_chunk("chunk-001"), make_retrieved_chunk("chunk-002")]
+        expected_chunks = [
+            make_retrieved_chunk("chunk-001"),
+            make_retrieved_chunk("chunk-002"),
+        ]
         storage_mock = mock_storage(SAMPLE_POLICY_TEXT.encode())
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch(
                 "src.agents.doc_agent._regulatory_classifier.classify_entity",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
+            patch(
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
             patch(
                 "src.agents.doc_agent.hybrid_retrieve",
                 new_callable=AsyncMock,
@@ -134,7 +153,9 @@ class TestDocAgent:
         state["_current_file"] = file
 
         storage_mock = AsyncMock()
-        storage_mock.download.side_effect = FileNotFoundError("File not found in storage")
+        storage_mock.download.side_effect = FileNotFoundError(
+            "File not found in storage"
+        )
 
         with patch("src.agents.doc_agent.get_storage", return_value=storage_mock):
             from src.agents.doc_agent import doc_agent_node
@@ -159,16 +180,26 @@ class TestDocAgent:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch(
                 "src.agents.doc_agent._regulatory_classifier.classify_entity",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
             patch(
-                "src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=qa_answer
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=qa_answer,
             ),
-            patch("src.agents.doc_agent.hybrid_retrieve", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
@@ -193,14 +224,26 @@ class TestDocAgent:
 
         with (
             patch("src.agents.doc_agent.get_storage", return_value=storage_mock),
-            patch("src.agents.doc_agent._ner.extract", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._ner.extract",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch(
                 "src.agents.doc_agent._regulatory_classifier.classify_entity",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            patch("src.agents.doc_agent._qa.answer", new_callable=AsyncMock, return_value=None),
-            patch("src.agents.doc_agent.hybrid_retrieve", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.doc_agent._qa.answer",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch(
+                "src.agents.doc_agent.hybrid_retrieve",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
             patch("src.agents.doc_agent.get_db_session") as mock_db,
         ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=MagicMock())

@@ -101,7 +101,9 @@ class Corpus(Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    documents: Mapped[list[Document]] = relationship("Document", back_populates="corpus")
+    documents: Mapped[list[Document]] = relationship(
+        "Document", back_populates="corpus"
+    )
     chunks: Mapped[list[Chunk]] = relationship("Chunk", back_populates="corpus")
 
 
@@ -140,7 +142,9 @@ class Chunk(Base):
     document_id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), ForeignKey("documents.id", ondelete="CASCADE")
     )
-    corpus_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("corpora.id"))
+    corpus_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("corpora.id")
+    )
     regulation: Mapped[str] = mapped_column(String(64), nullable=False)
     article: Mapped[str | None] = mapped_column(String(128))
     article_title: Mapped[str | None] = mapped_column(Text)
@@ -152,7 +156,9 @@ class Chunk(Base):
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
     embedding: Mapped[Any | None] = mapped_column(Vector(1536))
     ts_vector: Mapped[Any | None] = mapped_column(TSVECTOR)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     document: Mapped[Document] = relationship("Document", back_populates="chunks")
     corpus: Mapped[Corpus] = relationship("Corpus", back_populates="chunks")
@@ -179,7 +185,9 @@ class Job(Base):
         Enum(JobStatus, name="job_status"), default=JobStatus.QUEUED
     )
     regulation_scope: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
-    report_formats: Mapped[list[str]] = mapped_column(ARRAY(Text), default=["pdf", "json"])
+    report_formats: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), default=["pdf", "json"]
+    )
     language: Mapped[str] = mapped_column(String(8), default="en")
     options: Mapped[dict] = mapped_column(JSONB, default=dict)
 
@@ -216,7 +224,9 @@ class Job(Base):
     extractions: Mapped[list[AgentExtraction]] = relationship(
         "AgentExtraction", back_populates="job"
     )
-    gaps: Mapped[list[ComplianceGap]] = relationship("ComplianceGap", back_populates="job")
+    gaps: Mapped[list[ComplianceGap]] = relationship(
+        "ComplianceGap", back_populates="job"
+    )
     reports: Mapped[list[Report]] = relationship("Report", back_populates="job")
 
     __table_args__ = (
@@ -231,7 +241,9 @@ class JobFile(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
     )
-    job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
+    job_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("jobs.id", ondelete="CASCADE")
+    )
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     modality: Mapped[FileModality] = mapped_column(
         Enum(FileModality, name="file_modality"), default=FileModality.UNKNOWN
@@ -260,8 +272,12 @@ class AgentExtraction(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
     )
-    job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
-    file_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("job_files.id"))
+    job_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("jobs.id", ondelete="CASCADE")
+    )
+    file_id: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=False), ForeignKey("job_files.id")
+    )
     agent: Mapped[AgentType] = mapped_column(Enum(AgentType, name="agent_type"))
     raw_text: Mapped[str | None] = mapped_column(Text)
     ner_entities: Mapped[list | None] = mapped_column(JSONB)
@@ -279,7 +295,9 @@ class AgentExtraction(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_ms: Mapped[int | None] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     job: Mapped[Job] = relationship("Job", back_populates="extractions")
 
@@ -292,8 +310,12 @@ class ComplianceGap(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
     )
-    job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
-    severity: Mapped[GapSeverity] = mapped_column(Enum(GapSeverity, name="gap_severity"))
+    job_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("jobs.id", ondelete="CASCADE")
+    )
+    severity: Mapped[GapSeverity] = mapped_column(
+        Enum(GapSeverity, name="gap_severity")
+    )
     framework: Mapped[str] = mapped_column(String(64), nullable=False)
     regulatory_article: Mapped[str] = mapped_column(String(256), nullable=False)
     regulatory_chunk_id: Mapped[str | None] = mapped_column(
@@ -314,7 +336,9 @@ class ComplianceGap(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_uncertain: Mapped[bool] = mapped_column(Boolean, default=False)
     display_order: Mapped[int | None] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     job: Mapped[Job] = relationship("Job", back_populates="gaps")
 
@@ -330,8 +354,12 @@ class Report(Base):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4())
     )
-    job_id: Mapped[str] = mapped_column(String(26), ForeignKey("jobs.id", ondelete="CASCADE"))
-    format: Mapped[ReportFormat] = mapped_column(Enum(ReportFormat, name="report_format"))
+    job_id: Mapped[str] = mapped_column(
+        String(26), ForeignKey("jobs.id", ondelete="CASCADE")
+    )
+    format: Mapped[ReportFormat] = mapped_column(
+        Enum(ReportFormat, name="report_format")
+    )
     storage_key: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     generated_at: Mapped[datetime] = mapped_column(
@@ -370,7 +398,9 @@ class EvalRun(Base):
     p99_latency_seconds: Mapped[float | None] = mapped_column(Numeric(8, 2))
     all_thresholds_passed: Mapped[bool] = mapped_column(Boolean, default=False)
     mlflow_run_id: Mapped[str | None] = mapped_column(Text)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[int | None] = mapped_column(Integer)
 

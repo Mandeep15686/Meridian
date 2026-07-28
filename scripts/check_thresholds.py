@@ -105,7 +105,9 @@ def main(
     console.print("[bold]Meridian threshold checker[/bold]\n")
 
     # Load metrics
-    metrics = _load_from_file(metrics_file) if metrics_file else _load_from_mlflow(run_id)
+    metrics = (
+        _load_from_file(metrics_file) if metrics_file else _load_from_mlflow(run_id)
+    )
 
     if not metrics:
         console.print("[yellow]No metrics available — cannot check thresholds[/yellow]")

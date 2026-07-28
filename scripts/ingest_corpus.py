@@ -87,7 +87,12 @@ async def ingest_corpus(
     console.print(f"\n[bold]Ingesting corpus:[/bold] {loader.CORPUS_NAME}")
 
     t_start = time.monotonic()
-    stats = {"documents_processed": 0, "chunks_inserted": 0, "chunks_total": 0, "skipped": 0}
+    stats = {
+        "documents_processed": 0,
+        "chunks_inserted": 0,
+        "chunks_total": 0,
+        "skipped": 0,
+    }
 
     try:
         documents = loader.load_documents()
@@ -100,7 +105,9 @@ async def ingest_corpus(
 
     if dev_mode:
         documents = documents[:3]  # minimal set for dev
-        console.print(f"  [yellow]Dev mode: ingesting {len(documents)} documents only[/yellow]")
+        console.print(
+            f"  [yellow]Dev mode: ingesting {len(documents)} documents only[/yellow]"
+        )
 
     console.print(f"  Found {len(documents)} documents to process")
 
@@ -161,7 +168,9 @@ async def ingest_corpus(
         await session.execute(
             update(Corpus)
             .where(Corpus.id == corpus_db_id)
-            .values(chunk_count=chunk_count, document_count=stats["documents_processed"])
+            .values(
+                chunk_count=chunk_count, document_count=stats["documents_processed"]
+            )
         )
         await session.commit()
 

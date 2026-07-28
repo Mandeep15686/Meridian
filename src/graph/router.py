@@ -99,7 +99,9 @@ def _detect_modality(file: UploadedFile) -> Modality:
     if guessed_mime and guessed_mime in _MIME_TO_MODALITY:
         return _MIME_TO_MODALITY[guessed_mime]  # type: ignore[return-value]
 
-    logger.warning("Could not determine modality for file %s (%s)", file.filename, file.mime_type)
+    logger.warning(
+        "Could not determine modality for file %s (%s)", file.filename, file.mime_type
+    )
     return "unknown"
 
 
@@ -157,7 +159,9 @@ def route_to_agents(state: MeridianState) -> list[Send]:
     for f in files:
         agent_name = _MODALITY_TO_AGENT.get(f.modality)
         if agent_name is None:
-            logger.warning("No agent for modality %s, skipping file %s", f.modality, f.filename)
+            logger.warning(
+                "No agent for modality %s, skipping file %s", f.modality, f.filename
+            )
             continue
         sends.append(Send(agent_name, {**state, "_current_file": f}))
 

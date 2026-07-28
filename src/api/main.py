@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
     """Run startup and shutdown logic."""
-    logger.info("Starting Meridian API v%s (%s)", settings.VERSION, settings.ENVIRONMENT)
+    logger.info(
+        "Starting Meridian API v%s (%s)", settings.VERSION, settings.ENVIRONMENT
+    )
 
     # Initialise Sentry if configured
     if settings.SENTRY_DSN:
@@ -73,7 +75,11 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    origins = settings.ALLOWED_ORIGINS.split(",") if settings.ALLOWED_ORIGINS != "*" else ["*"]
+    origins = (
+        settings.ALLOWED_ORIGINS.split(",")
+        if settings.ALLOWED_ORIGINS != "*"
+        else ["*"]
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -125,7 +131,10 @@ def create_app() -> FastAPI:
                     return JSONResponse(
                         status_code=429,
                         content={
-                            "error": {"code": "rate_limited", "message": "Rate limit exceeded"}
+                            "error": {
+                                "code": "rate_limited",
+                                "message": "Rate limit exceeded",
+                            }
                         },
                         headers={
                             "X-RateLimit-Limit": str(settings.RATE_LIMIT_SUBMIT),
@@ -148,7 +157,10 @@ def create_app() -> FastAPI:
             JSONResponse(
                 status_code=500,
                 content={
-                    "error": {"code": "internal_error", "message": "An internal error occurred"}
+                    "error": {
+                        "code": "internal_error",
+                        "message": "An internal error occurred",
+                    }
                 },
             ),
         )

@@ -30,7 +30,9 @@ class SOC2Loader(_StubLoader):
     CORPUS_NAME = "SOC-2 Trust Services Criteria (2022)"
     JURISDICTION = "US"
     VERSION = "2022"
-    SOURCE_URL = "https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria"
+    SOURCE_URL = (
+        "https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria"
+    )
 
 
 class ISO27001Loader(_StubLoader):
@@ -90,7 +92,9 @@ def get_loader(corpus_id: str) -> BaseCorpusLoader:
     """Return an instantiated loader for a corpus slug."""
     cls = CORPUS_LOADERS.get(corpus_id)
     if cls is None:
-        raise ValueError(f"Unknown corpus: '{corpus_id}'. Available: {list(CORPUS_LOADERS.keys())}")
+        raise ValueError(
+            f"Unknown corpus: '{corpus_id}'. Available: {list(CORPUS_LOADERS.keys())}"
+        )
     return cls()
 
 

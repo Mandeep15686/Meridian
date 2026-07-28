@@ -55,7 +55,10 @@ async def data_agent_node(state: MeridianState) -> dict:
             return {"raw_extractions": []}
 
         logger.info(
-            "[data_agent] Parsed %s: %d rows × %d cols", file.filename, len(df), len(df.columns)
+            "[data_agent] Parsed %s: %d rows × %d cols",
+            file.filename,
+            len(df),
+            len(df.columns),
         )
 
         # ── 2. TAPAS table QA ─────────────────────────────────────────────────
@@ -74,7 +77,9 @@ async def data_agent_node(state: MeridianState) -> dict:
             try:
                 # Parse timestamps as strings for labels
                 df[time_col] = pd.to_datetime(df[time_col], errors="coerce")
-                series_df = df.dropna(subset=[time_col, value_col]).sort_values(time_col)
+                series_df = df.dropna(subset=[time_col, value_col]).sort_values(
+                    time_col
+                )
                 timestamps = series_df[time_col].dt.strftime("%Y-%m-%d").tolist()
                 values = series_df[value_col].astype(float).tolist()
 
@@ -103,8 +108,12 @@ async def data_agent_node(state: MeridianState) -> dict:
             if ans["answer"]:
                 summary_lines.append(f"{ans['question']}: {ans['answer']}")
         if forecast_output and forecast_output.get("anomaly_periods"):
-            anomaly_periods = [str(period) for period in forecast_output["anomaly_periods"][:3]]
-            summary_lines.append(f"Time series anomalies detected at: {', '.join(anomaly_periods)}")
+            anomaly_periods = [
+                str(period) for period in forecast_output["anomaly_periods"][:3]
+            ]
+            summary_lines.append(
+                f"Time series anomalies detected at: {', '.join(anomaly_periods)}"
+            )
         high_risk = [a for a in anomaly_scores if a.get("risk_score", 0) > 0.7]
         if high_risk:
             summary_lines.append(f"{len(high_risk)} high-risk rows detected")

@@ -109,9 +109,11 @@ def _fetch_recent_traces(lookback_hours: int = 24) -> list[dict[str, Any]]:
                         "inputs": cr.inputs or {},
                         "outputs": cr.outputs or {},
                         "error": cr.error,
-                        "latency_ms": int((cr.end_time - cr.start_time).total_seconds() * 1000)
-                        if cr.end_time and cr.start_time
-                        else 0,
+                        "latency_ms": (
+                            int((cr.end_time - cr.start_time).total_seconds() * 1000)
+                            if cr.end_time and cr.start_time
+                            else 0
+                        ),
                     }
                     for cr in (r.child_runs or [])
                 ],
@@ -215,7 +217,8 @@ async def _judge_trace(trace: dict[str, Any]) -> TraceScore | None:
             cr["name"]
             for cr in child_runs
             if any(
-                a in cr["name"] for a in ("doc_agent", "audio_agent", "vision_agent", "data_agent")
+                a in cr["name"]
+                for a in ("doc_agent", "audio_agent", "vision_agent", "data_agent")
             )
         ]
 
@@ -227,11 +230,15 @@ async def _judge_trace(trace: dict[str, Any]) -> TraceScore | None:
             if cr["name"] == "classify_input":
                 routing_log = json.dumps(cr.get("outputs", {}), indent=2)[:500]
             if "agent" in cr["name"]:
-                tool_calls_text += f"\n{cr['name']}: {json.dumps(cr.get('inputs', {}))[:300]}"
+                tool_calls_text += (
+                    f"\n{cr['name']}: {json.dumps(cr.get('inputs', {}))[:300]}"
+                )
 
         outputs = trace.get("outputs", {})
         final_report = outputs.get("final_report", {})
-        gaps = (final_report.get("gaps", []) if isinstance(final_report, dict) else [])[:3]
+        gaps = (final_report.get("gaps", []) if isinstance(final_report, dict) else [])[
+            :3
+        ]
         for g in gaps:
             if isinstance(g, dict):
                 gap_sample_text += (
@@ -347,15 +354,21 @@ async def run_agent_judge(
         )
 
     routing_acc = sum(s.routing_score for s in valid_scores) / (5.0 * len(valid_scores))
-    tool_quality = sum(s.tool_use_score for s in valid_scores) / (5.0 * len(valid_scores))
-    citation_acc = sum(s.citation_accuracy_score for s in valid_scores) / (5.0 * len(valid_scores))
+    tool_quality = sum(s.tool_use_score for s in valid_scores) / (
+        5.0 * len(valid_scores)
+    )
+    citation_acc = sum(s.citation_accuracy_score for s in valid_scores) / (
+        5.0 * len(valid_scores)
+    )
     overall = sum(s.overall_score for s in valid_scores) / (5.0 * len(valid_scores))
 
     low_quality = [s.run_id for s in valid_scores if s.overall_score < 3.0]
 
     if verbose:
         for score in valid_scores:
-            status = "[green]✓[/green]" if score.overall_score >= 3.0 else "[red]✗[/red]"
+            status = (
+                "[green]✓[/green]" if score.overall_score >= 3.0 else "[red]✗[/red]"
+            )
             console.print(
                 f"  {status} Run {score.run_id[:8]}... "
                 f"routing={score.routing_score:.1f} "
@@ -425,7 +438,12 @@ def _print_judge_results(summary: JudgeEvalSummary) -> None:
             t_val = float(threshold)
             v_val = float(value)
             passed = v_val >= t_val
-            table.add_row(label, value, threshold, "[green]✓[/green]" if passed else "[red]✗[/red]")
+            table.add_row(
+                label,
+                value,
+                threshold,
+                "[green]✓[/green]" if passed else "[red]✗[/red]",
+            )
 
     console.print(table)
 

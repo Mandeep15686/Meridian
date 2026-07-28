@@ -86,7 +86,10 @@ async def _check_anthropic_api() -> tuple[bool, str]:
 
         key = settings.ANTHROPIC_API_KEY
         if not key.startswith("sk-ant"):
-            return False, "ANTHROPIC_API_KEY does not look valid (should start with sk-ant)"
+            return (
+                False,
+                "ANTHROPIC_API_KEY does not look valid (should start with sk-ant)",
+            )
         # Lightweight check — don't make an actual API call in diagnostics
         return True, "API key format valid (sk-ant-...)"
     except Exception as exc:
@@ -115,7 +118,10 @@ async def _check_corpus() -> tuple[bool, str]:
             chunk_count = chunk_result.scalar() or 0
 
         corpus_summary = ", ".join(f"{row[0]}({row[1]})" for row in corpora)
-        return True, f"{len(corpora)} corpora, {chunk_count} embedded chunks — {corpus_summary}"
+        return (
+            True,
+            f"{len(corpora)} corpora, {chunk_count} embedded chunks — {corpus_summary}",
+        )
     except Exception as exc:
         return False, f"Query failed: {exc}"
 
@@ -200,7 +206,11 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         from src.config import settings
 
         results.append(
-            ("Configuration (Pydantic)", True, f"v{settings.VERSION}, env={settings.ENVIRONMENT}")
+            (
+                "Configuration (Pydantic)",
+                True,
+                f"v{settings.VERSION}, env={settings.ENVIRONMENT}",
+            )
         )
     except Exception as exc:
         results.append(("Configuration (Pydantic)", False, f"Validation failed: {exc}"))
@@ -219,7 +229,9 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         if verbose or not ok:
             table.add_row(name, status, message)
         else:
-            table.add_row(name, status, message[:80] + "..." if len(message) > 80 else message)
+            table.add_row(
+                name, status, message[:80] + "..." if len(message) > 80 else message
+            )
 
     console.print(table)
 
@@ -228,7 +240,9 @@ def main(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         raise SystemExit(0)
     else:
         failed = [name for name, ok, _ in results if not ok]
-        console.print(f"\n[red]{len(failed)} check(s) failed: {', '.join(failed)}[/red]")
+        console.print(
+            f"\n[red]{len(failed)} check(s) failed: {', '.join(failed)}[/red]"
+        )
         console.print("See TROUBLESHOOTING.md for fix instructions.\n")
         raise SystemExit(1)
 

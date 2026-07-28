@@ -92,7 +92,15 @@ class TestSubmitRequest:
             SubmitRequest(regulation_scope=["gdpr"], language="fra")  # 3 letters
 
     def test_all_valid_scopes_accepted(self):
-        valid_scopes = ["gdpr", "soc2", "iso27001", "sec_sp", "cfpb", "sec_sid", "eu_ai_act"]
+        valid_scopes = [
+            "gdpr",
+            "soc2",
+            "iso27001",
+            "sec_sp",
+            "cfpb",
+            "sec_sid",
+            "eu_ai_act",
+        ]
         req = SubmitRequest(regulation_scope=valid_scopes)
         assert set(req.regulation_scope) == set(valid_scopes)
 

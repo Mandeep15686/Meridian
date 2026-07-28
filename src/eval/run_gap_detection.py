@@ -179,11 +179,14 @@ async def _run_detection_on_example(
     try:
         # Retrieve regulatory context
         async with get_db_session() as db:
-            chunks = await hybrid_retrieve(db, example.policy_text[:512], example.regulation_scope)
+            chunks = await hybrid_retrieve(
+                db, example.policy_text[:512], example.regulation_scope
+            )
 
         # Format context and run synthesis
         ctx_text = "\n\n".join(
-            f"[{c.regulation.upper()} {c.article or ''}]\n{c.content}" for c in chunks[:5]
+            f"[{c.regulation.upper()} {c.article or ''}]\n{c.content}"
+            for c in chunks[:5]
         )
 
         gap_dicts = await claude.synthesize(
@@ -272,7 +275,11 @@ async def run_gap_detection_eval(
 
     precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0.0
     recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0.0
-    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+    f1 = (
+        (2 * precision * recall / (precision + recall))
+        if (precision + recall) > 0
+        else 0.0
+    )
 
     # Per-framework breakdown
     per_framework: dict[str, dict[str, Any]] = {}
@@ -325,9 +332,18 @@ async def run_gap_detection_eval(
         sweep_table.add_column("Recall", width=12)
         sweep_table.add_column("F1", width=12)
         for t in sorted(sweep_thresholds):
-            tp_s = sum(_match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[0] for r in results)
-            fp_s = sum(_match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[1] for r in results)
-            fn_s = sum(_match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[2] for r in results)
+            tp_s = sum(
+                _match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[0]
+                for r in results
+            )
+            fp_s = sum(
+                _match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[1]
+                for r in results
+            )
+            fn_s = sum(
+                _match_gaps(r.predicted_gaps, r.ground_truth_gaps, t)[2]
+                for r in results
+            )
             p_s = tp_s / (tp_s + fp_s) if tp_s + fp_s > 0 else 0.0
             r_s = tp_s / (tp_s + fn_s) if tp_s + fn_s > 0 else 0.0
             f1_s = 2 * p_s * r_s / (p_s + r_s) if p_s + r_s > 0 else 0.0
@@ -352,7 +368,11 @@ def _print_gap_results(summary: EvalSummary) -> None:
     table.add_row("Recall", f"{summary.recall:.4f}")
     table.add_row(
         "F1",
-        f"[green]{summary.f1:.4f}[/green]" if passed else f"[red]{summary.f1:.4f}[/red]",
+        (
+            f"[green]{summary.f1:.4f}[/green]"
+            if passed
+            else f"[red]{summary.f1:.4f}[/red]"
+        ),
     )
     table.add_row("Threshold", f"{THRESHOLDS.gap_detection_f1:.4f}")
     table.add_row("Duration", f"{summary.duration_seconds:.1f}s")
@@ -379,7 +399,9 @@ def _print_gap_results(summary: EvalSummary) -> None:
             f"[green]✓ F1 {summary.f1:.4f} >= threshold {THRESHOLDS.gap_detection_f1}[/green]"
         )
     else:
-        console.print(f"[red]✗ F1 {summary.f1:.4f} < threshold {THRESHOLDS.gap_detection_f1}[/red]")
+        console.print(
+            f"[red]✗ F1 {summary.f1:.4f} < threshold {THRESHOLDS.gap_detection_f1}[/red]"
+        )
 
 
 def _log_gap_to_mlflow(summary: EvalSummary, dataset_path: Path) -> None:
@@ -423,10 +445,14 @@ def main(
         "--dataset",
         "-d",
     ),
-    threshold: float = typer.Option(0.5, "--threshold", "-t", help="Confidence threshold"),
+    threshold: float = typer.Option(
+        0.5, "--threshold", "-t", help="Confidence threshold"
+    ),
     output_mlflow: bool = typer.Option(False, "--output-mlflow"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
-    sweep: str = typer.Option("", "--sweep-thresholds", help="Comma-separated thresholds to sweep"),
+    sweep: str = typer.Option(
+        "", "--sweep-thresholds", help="Comma-separated thresholds to sweep"
+    ),
 ) -> None:
     """Run the compliance gap detection F1 evaluation."""
     sweep_list = [float(t) for t in sweep.split(",") if t.strip()] if sweep else None

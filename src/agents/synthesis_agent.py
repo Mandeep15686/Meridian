@@ -69,7 +69,8 @@ def _format_policy_content(extractions: list[AgentExtraction]) -> str:
             parts.append("VQA findings:\n" + "\n".join(vqa_lines))
         if ext.tapas_answers:
             tapas_lines = [
-                f"  Q: {r['question']} → A: {r['answer']}" for r in ext.tapas_answers[:6]
+                f"  Q: {r['question']} → A: {r['answer']}"
+                for r in ext.tapas_answers[:6]
             ]
             parts.append("Table QA findings:\n" + "\n".join(tapas_lines))
         if ext.table_summary:
@@ -159,9 +160,12 @@ async def synthesis_node(state: MeridianState) -> dict:
                     gap_id=raw_gap.get("gap_id") or f"gap_{uuid4().hex[:6]}",
                     severity=raw_gap.get("severity", "minor"),
                     framework=raw_gap.get(
-                        "framework", regulation_scope[0] if regulation_scope else "unknown"
+                        "framework",
+                        regulation_scope[0] if regulation_scope else "unknown",
                     ),
-                    regulatory_article=raw_gap.get("regulatory_article", "Unknown Article"),
+                    regulatory_article=raw_gap.get(
+                        "regulatory_article", "Unknown Article"
+                    ),
                     regulatory_requirement=raw_gap.get("regulatory_requirement", ""),
                     regulatory_quote=raw_gap.get("regulatory_quote", ""),
                     regulatory_chunk_id=raw_gap.get("regulatory_chunk_id"),
@@ -174,7 +178,9 @@ async def synthesis_node(state: MeridianState) -> dict:
                 )
             )
         except Exception as exc:
-            logger.warning("[synthesis] Failed to parse gap dict: %s — %s", raw_gap, exc)
+            logger.warning(
+                "[synthesis] Failed to parse gap dict: %s — %s", raw_gap, exc
+            )
 
     duration_ms = int((time.monotonic() - t_start) * 1000)
     logger.info(
@@ -239,7 +245,9 @@ async def report_node(state: MeridianState) -> dict:
     # Generate executive summary via Claude
     gap_dicts = [g.model_dump() for g in verified_gaps]
     try:
-        executive_summary = await _claude.generate_executive_summary(gap_dicts, regulation_scope)
+        executive_summary = await _claude.generate_executive_summary(
+            gap_dicts, regulation_scope
+        )
     except Exception as exc:
         logger.warning("[report] Executive summary generation failed: %s", exc)
         executive_summary = (

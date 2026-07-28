@@ -50,9 +50,9 @@ class TestRRF:
 
         fused = reciprocal_rank_fusion(dense, bm25)
 
-        assert fused[0]["chunk_id"] == "A", (
-            "Chunk A appears #1 in both lists — should be top-ranked after RRF"
-        )
+        assert (
+            fused[0]["chunk_id"] == "A"
+        ), "Chunk A appears #1 in both lists — should be top-ranked after RRF"
 
     def test_chunk_only_in_dense_ranked_lower_than_dual(self):
         """A chunk appearing only in dense retrieval should rank lower than dual-list chunks."""
@@ -64,9 +64,9 @@ class TestRRF:
         c_rank = next(i for i, r in enumerate(fused) if r["chunk_id"] == "C")
         b_rank = next(i for i, r in enumerate(fused) if r["chunk_id"] == "B")
 
-        assert c_rank < b_rank, (
-            "C appears in both lists (even at lower dense rank) and should outrank B (dense-only)"
-        )
+        assert (
+            c_rank < b_rank
+        ), "C appears in both lists (even at lower dense rank) and should outrank B (dense-only)"
 
     def test_all_chunks_present_in_output(self):
         """Output should contain all unique chunks from both input lists."""
@@ -88,7 +88,9 @@ class TestRRF:
         fused = reciprocal_rank_fusion(dense, bm25)
 
         for chunk in fused:
-            assert chunk["rrf_score"] > 0, f"Chunk {chunk['chunk_id']} has non-positive RRF score"
+            assert (
+                chunk["rrf_score"] > 0
+            ), f"Chunk {chunk['chunk_id']} has non-positive RRF score"
 
     def test_rrf_output_sorted_descending(self):
         """Output list should be sorted by RRF score in descending order."""
@@ -98,9 +100,9 @@ class TestRRF:
         fused = reciprocal_rank_fusion(dense, bm25)
         scores = [r["rrf_score"] for r in fused]
 
-        assert scores == sorted(scores, reverse=True), (
-            "Output should be sorted descending by RRF score"
-        )
+        assert scores == sorted(
+            scores, reverse=True
+        ), "Output should be sorted descending by RRF score"
 
     def test_empty_dense_results(self):
         """RRF should handle empty dense results gracefully."""
@@ -132,7 +134,9 @@ class TestRRF:
         chunk_ids = [r["chunk_id"] for r in fused]
 
         # A should appear at most once in the output
-        assert chunk_ids.count("A") <= 1, "Duplicate chunk should be de-duplicated in RRF output"
+        assert (
+            chunk_ids.count("A") <= 1
+        ), "Duplicate chunk should be de-duplicated in RRF output"
 
     def test_k_parameter_affects_ranking(self):
         """Changing k should change the relative weight of top vs lower ranks."""
@@ -150,9 +154,9 @@ class TestRRF:
         high_k_scores = {r["chunk_id"]: r["rrf_score"] for r in fused_high_k}
 
         # Scores should differ between k=1 and k=1000
-        assert low_k_scores != high_k_scores, (
-            "Different k values should produce different RRF scores"
-        )
+        assert (
+            low_k_scores != high_k_scores
+        ), "Different k values should produce different RRF scores"
 
     def test_rrf_metadata_preserved(self):
         """Original metadata fields (dense_score, bm25_score) should be preserved."""
@@ -169,8 +173,12 @@ class TestRRF:
     @pytest.mark.parametrize("list_size", [5, 20, 50])
     def test_large_lists(self, list_size: int):
         """RRF should work correctly with larger candidate lists."""
-        dense = make_dense_results([(f"chunk_{i}", 1.0 - i * 0.01) for i in range(list_size)])
-        bm25 = make_bm25_results([(f"chunk_{i}", float(list_size - i)) for i in range(list_size)])
+        dense = make_dense_results(
+            [(f"chunk_{i}", 1.0 - i * 0.01) for i in range(list_size)]
+        )
+        bm25 = make_bm25_results(
+            [(f"chunk_{i}", float(list_size - i)) for i in range(list_size)]
+        )
 
         fused = reciprocal_rank_fusion(dense, bm25)
 

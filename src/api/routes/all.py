@@ -31,7 +31,15 @@ from src.api.schemas.all import (
     SubmittedFileInfo,
 )
 from src.config import settings
-from src.db.models import ComplianceGap, Corpus, Job, JobFile, JobStatus, Report, ReportFormat
+from src.db.models import (
+    ComplianceGap,
+    Corpus,
+    Job,
+    JobFile,
+    JobStatus,
+    Report,
+    ReportFormat,
+)
 from src.db.session import get_db
 from src.storage.base import get_storage
 
@@ -90,7 +98,8 @@ async def submit_job(
     # Validate inputs
     if not files:
         raise HTTPException(
-            status_code=400, detail={"code": "no_files", "message": "At least one file required"}
+            status_code=400,
+            detail={"code": "no_files", "message": "At least one file required"},
         )
     if len(files) > settings.MAX_FILES_PER_JOB:
         raise HTTPException(
@@ -128,7 +137,10 @@ async def submit_job(
         declared_mime = upload.content_type or "application/octet-stream"
 
         # Accept if either detected or declared MIME is allowed
-        if detected_mime not in ALLOWED_MIME_TYPES and declared_mime not in ALLOWED_MIME_TYPES:
+        if (
+            detected_mime not in ALLOWED_MIME_TYPES
+            and declared_mime not in ALLOWED_MIME_TYPES
+        ):
             raise HTTPException(
                 status_code=415,
                 detail={
@@ -139,7 +151,9 @@ async def submit_job(
 
         content_hash = hashlib.sha256(content).hexdigest()
         file_id = str(uuid.uuid4())
-        storage_key = f"uploads/{job_id}/{file_id}_{Path(upload.filename or 'file').name}"
+        storage_key = (
+            f"uploads/{job_id}/{file_id}_{Path(upload.filename or 'file').name}"
+        )
 
         await storage.upload(content, storage_key, content_type=detected_mime)
 
@@ -177,7 +191,9 @@ async def submit_job(
     run_compliance_job.delay(job_id)
 
     submitted_at = datetime.now(UTC)
-    logger.info("Job %s queued: %d files, scope=%s", job_id, len(job_files), regulation_scope)
+    logger.info(
+        "Job %s queued: %d files, scope=%s", job_id, len(job_files), regulation_scope
+    )
 
     return SubmitResponse(
         job_id=job_id,
@@ -204,14 +220,19 @@ async def get_job_status(
     if job is None:
         raise HTTPException(
             status_code=404,
-            detail={"code": "job_not_found", "message": f"Job {job_id} not found or expired"},
+            detail={
+                "code": "job_not_found",
+                "message": f"Job {job_id} not found or expired",
+            },
         )
 
     # Build progress percentage
     stage_count = 6  # classify → agents → synthesize → gate → report
     completed = len(job.stages_complete or [])
     progress_pct = (
-        min(99, int(completed / stage_count * 100)) if job.status == JobStatus.PROCESSING else None
+        min(99, int(completed / stage_count * 100))
+        if job.status == JobStatus.PROCESSING
+        else None
     )
 
     # Build summary for complete jobs
@@ -243,14 +264,16 @@ async def get_job_status(
         progress_pct=progress_pct,
         report_url=f"/v1/report/{job_id}" if job.status == JobStatus.COMPLETE else None,
         langsmith_trace_url=job.langsmith_trace_url,
-        error=JobError(
-            code=job.error_code,
-            message=job.error_message or "",
-            stage=job.error_stage or "unknown",
-            retry_count=job.retry_count,
-        )
-        if job.error_code
-        else None,
+        error=(
+            JobError(
+                code=job.error_code,
+                message=job.error_message or "",
+                stage=job.error_stage or "unknown",
+                retry_count=job.retry_count,
+            )
+            if job.error_code
+            else None
+        ),
     )
 
 
@@ -270,18 +293,24 @@ async def get_report(
 
     if job is None:
         raise HTTPException(
-            status_code=404, detail={"code": "job_not_found", "message": "Job not found"}
+            status_code=404,
+            detail={"code": "job_not_found", "message": "Job not found"},
         )
     if job.status != JobStatus.COMPLETE:
         raise HTTPException(
             status_code=409,
-            detail={"code": "job_not_complete", "message": f"Job status: {job.status.value}"},
+            detail={
+                "code": "job_not_complete",
+                "message": f"Job status: {job.status.value}",
+            },
         )
 
     if format == "pdf":
         # Serve PDF binary from storage
         rpt_result = await db.execute(
-            select(Report).where(Report.job_id == job_id, Report.format == ReportFormat.PDF)
+            select(Report).where(
+                Report.job_id == job_id, Report.format == ReportFormat.PDF
+            )
         )
         report_row = rpt_result.scalar_one_or_none()
         if not report_row:
@@ -294,7 +323,9 @@ async def get_report(
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="meridian_report_{job_id}.pdf"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="meridian_report_{job_id}.pdf"'
+            },
         )
 
     # JSON report: build from database records
@@ -451,5 +482,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
         version=settings.VERSION,
         timestamp=datetime.now(UTC),
         dependencies=deps,
-        message=None if overall == "healthy" else "One or more dependencies are degraded",
+        message=(
+            None if overall == "healthy" else "One or more dependencies are degraded"
+        ),
     )

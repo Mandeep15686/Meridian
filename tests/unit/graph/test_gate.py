@@ -99,9 +99,9 @@ class TestHallucinationGate:
 
         # Score == threshold should pass (not be in failed list)
         # The gate logic: if score < threshold → fail
-        assert "gap_001" not in result.get("failed_gap_ids", []), (
-            "Score exactly at threshold should pass (< is exclusive)"
-        )
+        assert "gap_001" not in result.get(
+            "failed_gap_ids", []
+        ), "Score exactly at threshold should pass (< is exclusive)"
 
     def test_empty_candidate_gaps_returns_empty(self):
         """Gate with no candidate gaps should return empty verified_gaps."""

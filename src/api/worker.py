@@ -30,7 +30,8 @@ celery_app.conf.update(
     task_acks_late=True,  # acknowledge after completion (safe for crash recovery)
     task_reject_on_worker_lost=True,  # re-queue on worker crash
     worker_prefetch_multiplier=1,  # one job at a time per worker thread
-    task_soft_time_limit=settings.CELERY_TASK_TIMEOUT - 60,  # soft limit triggers warning
+    task_soft_time_limit=settings.CELERY_TASK_TIMEOUT
+    - 60,  # soft limit triggers warning
     task_time_limit=settings.CELERY_TASK_TIMEOUT,  # hard limit kills the task
     result_expires=settings.JOB_TTL_DAYS * 86400,
     beat_schedule={
@@ -108,7 +109,9 @@ async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
     try:
         async with get_db_session() as db:
             # Load files
-            files_result = await db.execute(select(JobFile).where(JobFile.job_id == job_id))
+            files_result = await db.execute(
+                select(JobFile).where(JobFile.job_id == job_id)
+            )
             db_files = files_result.scalars().all()
 
             input_files = [
@@ -146,7 +149,9 @@ async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
         # Persist results
         report = final_state.get("final_report")
         if report:
-            await _persist_results(job_id, cast(dict[str, Any], final_state), list(db_files))
+            await _persist_results(
+                job_id, cast(dict[str, Any], final_state), list(db_files)
+            )
 
         logger.info("Compliance job %s completed successfully", job_id)
         return {"status": "complete", "job_id": job_id}
@@ -165,9 +170,18 @@ async def _run_compliance_job_async(task: Any, job_id: str) -> dict[str, Any]:
         return {"status": "failed", "error": str(exc)}
 
 
-async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: list[Any]) -> None:
+async def _persist_results(
+    job_id: str, final_state: dict[str, Any], db_files: list[Any]
+) -> None:
     """Save compliance gaps, update job stats, and generate reports."""
-    from src.db.models import ComplianceGap, GapSeverity, Job, JobStatus, Report, ReportFormat
+    from src.db.models import (
+        ComplianceGap,
+        GapSeverity,
+        Job,
+        JobStatus,
+        Report,
+        ReportFormat,
+    )
     from src.db.session import get_db_session
 
     report = final_state.get("final_report")
@@ -218,7 +232,9 @@ async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: l
         from src.storage.base import get_storage
 
         storage = get_storage()
-        report_json = json.dumps(report.model_dump(mode="json"), indent=2, default=str).encode()
+        report_json = json.dumps(
+            report.model_dump(mode="json"), indent=2, default=str
+        ).encode()
         await storage.upload(report_json, report_key, "application/json")
 
         db.add(
@@ -237,7 +253,9 @@ async def _persist_results(job_id: str, final_state: dict[str, Any], db_files: l
     await _deliver_webhook(job_id)
 
 
-async def _mark_failed(job_id: str, error_message: str, error_stage: str, retry_count: int) -> None:
+async def _mark_failed(
+    job_id: str, error_message: str, error_stage: str, retry_count: int
+) -> None:
     """Mark a job as failed in the database."""
     from src.db.models import Job, JobStatus
     from src.db.session import get_db_session
@@ -294,14 +312,18 @@ async def _deliver_webhook(job_id: str) -> None:
         }
 
         if settings.WEBHOOK_SECRET:
-            sig = hmac.new(settings.WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+            sig = hmac.new(
+                settings.WEBHOOK_SECRET.encode(), body, hashlib.sha256
+            ).hexdigest()
             headers["X-Meridian-Signature"] = f"sha256={sig}"
 
         retry_delays = settings.webhook_retry_delays_list
         for attempt, delay in enumerate(retry_delays):
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
-                    response = await client.post(job.webhook_url, content=body, headers=headers)
+                    response = await client.post(
+                        job.webhook_url, content=body, headers=headers
+                    )
                     if response.status_code < 400:
                         job.webhook_delivered = True
                         job.webhook_attempts = attempt + 1
@@ -309,7 +331,9 @@ async def _deliver_webhook(job_id: str) -> None:
                         logger.info("Webhook delivered for job %s", job_id)
                         return
             except Exception as exc:
-                logger.warning("Webhook attempt %d failed for job %s: %s", attempt + 1, job_id, exc)
+                logger.warning(
+                    "Webhook attempt %d failed for job %s: %s", attempt + 1, job_id, exc
+                )
 
             if attempt < len(retry_delays) - 1:
                 await asyncio.sleep(delay)

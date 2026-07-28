@@ -6,7 +6,13 @@ import logging
 import time
 
 from src.db.session import get_db_session
-from src.graph.state import AgentExtraction, Entity, MeridianState, QAResult, UploadedFile
+from src.graph.state import (
+    AgentExtraction,
+    Entity,
+    MeridianState,
+    QAResult,
+    UploadedFile,
+)
 from src.models.nlp import (
     NERModel,
     QAModel,

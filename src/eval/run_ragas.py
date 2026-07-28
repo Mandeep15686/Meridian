@@ -127,7 +127,9 @@ async def run_ragas_eval(
     if not examples:
         raise ValueError(f"No examples loaded from {dataset_path}")
 
-    console.print(f"[cyan]Running RAGAS evaluation on {len(examples)} examples...[/cyan]")
+    console.print(
+        f"[cyan]Running RAGAS evaluation on {len(examples)} examples...[/cyan]"
+    )
     t_start = time.monotonic()
 
     # Build RAGAS dataset
@@ -210,7 +212,9 @@ async def run_ragas_eval(
     if check_result.passed:
         console.print("[green]✓ All RAGAS thresholds passed[/green]")
     else:
-        console.print(f"[red]✗ RAGAS threshold failures:[/red]\n{check_result.summary()}")
+        console.print(
+            f"[red]✗ RAGAS threshold failures:[/red]\n{check_result.summary()}"
+        )
 
     # Log to MLflow
     if output_mlflow:
