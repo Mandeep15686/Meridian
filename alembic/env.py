@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -10,7 +11,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from src.config import settings
 
 # Import all models so Alembic can detect them
 from src.db.models import Base  # noqa: F401
@@ -18,9 +18,17 @@ from src.db.models import Base  # noqa: F401
 # Alembic Config object (provides access to .ini values)
 config = context.config
 
-# Set the database URL from our settings
+# Migrations only need a database connection.  Do not import application settings
+# here: doing so makes schema changes depend on unrelated runtime credentials.
+database_url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+if not database_url:
+    raise RuntimeError("DATABASE_URL must be set to run Alembic migrations")
+
 config.set_main_option(
-    "sqlalchemy.url", settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    "sqlalchemy.url",
+    database_url.replace("postgresql://", "postgresql+asyncpg://").replace(
+        "postgresql+psycopg2://", "postgresql+asyncpg://"
+    ),
 )
 
 # Logging
