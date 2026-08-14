@@ -68,9 +68,9 @@ jobs:
       MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI || 'http://localhost:5000' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -103,7 +103,7 @@ jobs:
           MLFLOW_EXPERIMENT_NAME: meridian-eval-ci
 
       - name: Upload RAGAS results artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ragas-results-${{ github.run_id }}
@@ -146,9 +146,9 @@ jobs:
       LOCAL_STORAGE_PATH: /tmp/meridian_eval
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -181,9 +181,9 @@ jobs:
     needs: gap-detection-eval
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -215,14 +215,14 @@ jobs:
       issues: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download eval artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: "*-results-${{ github.run_id }}"
           merge-multiple: true
@@ -230,7 +230,7 @@ jobs:
         continue-on-error: true
 
       - name: Check job outcomes and create issue on failure
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         if: >
           needs.ragas-eval.result == 'failure' ||
           needs.gap-detection-eval.result == 'failure'
@@ -295,7 +295,7 @@ jobs:
       github.event_name == 'schedule'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: auth
         uses: google-github-actions/auth@v2
